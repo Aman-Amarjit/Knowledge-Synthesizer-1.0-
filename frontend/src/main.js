@@ -15,6 +15,9 @@ class KnowledgeSynthesizerApp {
     }
 
     exposeGlobals() {
+        // Expose uiManager for inline handlers (like Study Mode toggle)
+        window.uiManager = this.uiManager;
+
         // Theme
         window.toggleTheme = () => this.uiManager.toggleTheme();
 

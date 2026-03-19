@@ -1467,7 +1467,9 @@
         .area-keypoints {
             grid-column: 1;
             grid-row: 1;
-            max-height: 300px;
+            height: 400px; /* Increased and fixed to prevent jumps */
+            display: flex;
+            flex-direction: column;
         }
 
         .area-brief {
@@ -1505,15 +1507,8 @@
         .insight-item {
             cursor: pointer;
             perspective: 1000px;
-            min-height: 50px;
-            margin-bottom: 1rem;
-        }
-
-        .insight-item {
-            cursor: pointer;
-            perspective: 1000px;
             margin-bottom: 1.2rem;
-            min-height: 60px;
+            min-height: 80px;
         }
 
         .insight-card-inner {

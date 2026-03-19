@@ -122,22 +122,34 @@ class GraphRenderer {
                              node.type === 'counter' ? '--node-counter' : 
                              node.type === 'unresolved' ? '--node-unresolved' : '--node-concept';
             
-            const nodeColor = this.getCSSVar(colorKey);
+            let nodeColor = this.getCSSVar(colorKey);
+            const opacity = node.type === 'noise' ? 0.3 : (node.opacity || 1.0);
 
+            this.ctx.globalAlpha = opacity;
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
             this.ctx.fillStyle = nodeColor;
             this.ctx.fill();
             
+            // Central Glow for logic hub
+            if (node.type === 'concept') {
+                this.ctx.shadowBlur = 15;
+                this.ctx.shadowColor = nodeColor;
+            } else {
+                this.ctx.shadowBlur = 0;
+            }
+
             this.ctx.strokeStyle = '#fff';
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
 
             // Label
             this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
-            this.ctx.font = 'bold 12px Arial';
+            this.ctx.font = node.type === 'noise' ? 'italic 10px Arial' : 'bold 12px Arial';
             this.ctx.textAlign = 'center';
             this.ctx.fillText(node.label, node.x, node.y + node.r + 15);
+            this.ctx.globalAlpha = 1.0;
+            this.ctx.shadowBlur = 0;
         });
     }
 
@@ -146,7 +158,7 @@ class GraphRenderer {
         this.animationId = requestAnimationFrame(() => this.animate(graphData));
     }
 
-    highlightNodeByLabel(label) {
+    highlightNodeByLabel(label, pulse = false) {
         if (!label || !this.graphData.nodes) return;
         const node = this.graphData.nodes.find(n => 
             n.label.toLowerCase().includes(label.toLowerCase()) || 
@@ -154,8 +166,21 @@ class GraphRenderer {
         );
         if (node) {
             const originalR = node.r;
-            node.r = originalR * 1.6;
-            setTimeout(() => { node.r = originalR; }, 1000);
+            if (pulse) {
+                let growing = true;
+                const interval = setInterval(() => {
+                    if (growing) node.r += 1;
+                    else node.r -= 1;
+                    if (node.r > originalR * 1.5) growing = false;
+                    if (node.r <= originalR) {
+                        node.r = originalR;
+                        clearInterval(interval);
+                    }
+                }, 30);
+            } else {
+                node.r = originalR * 1.6;
+                setTimeout(() => { node.r = originalR; }, 1000);
+            }
         }
     }
 

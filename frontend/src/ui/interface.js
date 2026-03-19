@@ -142,7 +142,7 @@ class UIManager {
             nodesEl.innerHTML = '';
             translatedNodes.forEach((text, index) => {
                 const retentionPoints = this.state.analysisResult.retention_data || [];
-                const backContent = retentionPoints[index] || "Dive deep...";
+                const backContent = retentionPoints[index] || "Strategic context: This point represents a core synthesis node. Examine its relationship to the broader discussion.";
 
                 const item = document.createElement('div');
                 item.className = 'insight-item';
@@ -217,8 +217,8 @@ class UIManager {
             `;
             nodesEl.prepend(item); // Show newest at top during replay
 
-            // Highlight Graph if possible (simple heuristic: match label)
-            this.graphRenderer.highlightNodeByLabel(event.insight.split(' ')[0]);
+            // Highlight Graph with pulsing effect
+            this.graphRenderer.highlightNodeByLabel(event.insight.split(' ')[0], true);
 
             await new Promise(r => setTimeout(r, 1200));
         }

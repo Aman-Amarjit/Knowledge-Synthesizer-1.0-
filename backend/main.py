@@ -235,6 +235,12 @@ def synthesize(
     for i, concept in enumerate(top_concepts[1:], start=2):
         nodes.append({"id": i, "type": "argument", "label": concept.title()})
         edges.append({"source": 1, "target": i})
+    
+    # Add peripheral "Noise" nodes (dimmed in UI)
+    noise_count = 3
+    for i in range(len(nodes) + 1, len(nodes) + 1 + noise_count):
+        nodes.append({"id": i, "type": "noise", "label": "Filtered Data"})
+        edges.append({"source": 1, "target": i, "dashed": True})
 
     # NEW: Generate timeline data for 'Decision Replay'
     timeline = []
@@ -267,6 +273,9 @@ def synthesize(
             retention_data.append(f"Strategic context: This point emphasizes the core logic of {point[:30]}... Examine how it connects to the broader synthesis.")
         else:
             retention_data.append(simple)
+    
+    # Ensure they are the same length
+    retention_data = retention_data[:len(key_points)]
 
     return {
         "analysis": {

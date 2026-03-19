@@ -378,51 +378,96 @@
             pointer-events: none;
         }
 
-        /* --- PAGE TRANSITIONS --- */
+        /* --- PREMIUM ORIGAMI BIRD TRANSITIONS --- */
         main {
             flex: 1;
             position: relative;
             width: 100%;
             max-width: 1200px;
             margin: 0 auto;
-            /* UPDATED: Adjusted padding since header is removed */
             padding: 4rem 2rem 2rem 2rem;
-
-            transition: clip-path 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19),
-                transform 0.6s cubic-bezier(0.55, 0.055, 0.675, 0.19),
-                opacity 0.6s ease;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            transform-origin: center 200px;
+            transition: opacity 0.4s ease, transform 0.4s ease;
             opacity: 1;
         }
 
-        /* Helper class to fade out content for video viewing */
         main.content-hidden {
             opacity: 0 !important;
-            transform: scale(0.95);
+            transform: scale(0.98);
             pointer-events: none;
         }
 
-        main.folded {
-            clip-path: polygon(50% 0%, 100% 40%, 50% 100%, 0% 40%);
-            transform: scale(0.6);
+        #origami-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9998;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0);
+            transition: background 0.4s ease;
         }
 
-        main.fly-out {
-            transform: scale(0.4) translateX(150vw) rotate(15deg);
+        #origami-overlay.active {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(2px);
+        }
+
+        .origami-bird {
+            width: 150px;
+            height: 150px;
+            color: var(--accent-color);
+            filter: drop-shadow(0 0 15px var(--accent-color));
             opacity: 0;
+            transform: translateX(-100vw) rotate(-20deg) scale(0.5);
+            transition: opacity 0.3s ease;
         }
 
-        main.fly-in-start {
-            transform: scale(0.4) translateX(-150vw) rotate(-15deg);
-            opacity: 0;
-            transition: none;
+        #origami-overlay.active .origami-bird {
+            opacity: 1;
+            animation: birdFlyAcross 1.8s cubic-bezier(0.45, 0.05, 0.55, 0.95) forwards;
         }
 
-        main.animating {
-            transition: clip-path 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275),
-                opacity 0.6s ease;
+        .bird-part {
+            fill: currentColor;
+            stroke: rgba(255, 255, 255, 0.2);
+            stroke-width: 0.5;
+        }
+
+        .wing {
+            transform-origin: 50% 50%;
+            animation: wingFlap 0.4s infinite ease-in-out alternate;
+        }
+
+        .wing-left {
+            animation-delay: 0s;
+        }
+
+        .wing-right {
+            animation-delay: 0.1s;
+        }
+
+        @keyframes wingFlap {
+            from { transform: rotateY(0deg); }
+            to { transform: rotateY(60deg); }
+        }
+
+        @keyframes birdFlyAcross {
+            0% {
+                transform: translateX(-100vw) translateY(20vh) rotate(-20deg) scale(0.5);
+            }
+            40% {
+                transform: translateX(0vw) translateY(0vh) rotate(0deg) scale(1.2);
+            }
+            60% {
+                transform: translateX(0vw) translateY(0vh) rotate(0deg) scale(1.2);
+            }
+            100% {
+                transform: translateX(100vw) translateY(-20vh) rotate(20deg) scale(0.8);
+            }
         }
 
         .page-view {
@@ -1430,6 +1475,21 @@
         <img id="themeBtnImg" src="assets/team_symbol_light.png" alt="Toggle Theme"
             style="width: 24px; height: 24px; object-fit: contain;">
     </button>
+
+    <!-- ORIGAMI BIRD TRANSITION OVERLAY -->
+    <div id="origami-overlay">
+        <svg viewBox="0 0 100 100" class="origami-bird">
+            <!-- Body -->
+            <path class="bird-part" d="M50 30 L70 50 L50 70 L30 50 Z" />
+            <!-- Tail -->
+            <path class="bird-part" d="M50 70 L50 85 L40 75 Z" opacity="0.8" />
+            <!-- Head -->
+            <path class="bird-part" d="M50 30 L50 15 L60 25 Z" opacity="0.9" />
+            <!-- Wings -->
+            <path class="bird-part wing wing-left" d="M30 50 L10 20 L30 20 Z" opacity="0.7" />
+            <path class="bird-part wing wing-right" d="M70 50 L90 20 L70 20 Z" opacity="0.7" />
+        </svg>
+    </div>
 
     <main id="mainContainer">
 

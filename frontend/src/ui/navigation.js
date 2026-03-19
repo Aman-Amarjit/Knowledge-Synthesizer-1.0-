@@ -7,29 +7,25 @@ class NavigationController {
     navigateTo(targetId) {
         if (document.getElementById(targetId).classList.contains('is-active')) return;
 
-        this.main.classList.remove('animating');
-        this.main.classList.add('folded');
+        const overlay = document.getElementById('origami-overlay');
+        overlay.classList.add('active');
+        this.main.classList.add('content-hidden');
 
         setTimeout(() => {
-            this.main.classList.add('fly-out');
-            setTimeout(() => {
-                document.querySelectorAll('.page-view').forEach(v => v.classList.remove('is-active'));
-                const nextView = document.getElementById(targetId);
-                nextView.classList.add('is-active');
+            // Switch views when bird is centered (approx 0.8s into 1.8s animation)
+            document.querySelectorAll('.page-view').forEach(v => v.classList.remove('is-active'));
+            const nextView = document.getElementById(targetId);
+            nextView.classList.add('is-active');
+            
+            this.main.classList.remove('content-hidden');
 
-                this.main.classList.remove('fly-out');
-                this.main.classList.add('fly-in-start');
-                void this.main.offsetWidth;
-                this.main.classList.add('animating');
-                this.main.classList.remove('fly-in-start');
+            if (targetId === 'result-view') {
+                setTimeout(() => this.graphRenderer.init(window.appState.graphData), 300);
+            }
+        }, 800);
 
-                setTimeout(() => {
-                    this.main.classList.remove('folded');
-                    if (targetId === 'result-view') {
-                        setTimeout(() => this.graphRenderer.init(window.appState.graphData), 300);
-                    }
-                }, 600);
-            }, 500);
-        }, 600);
+        setTimeout(() => {
+            overlay.classList.remove('active');
+        }, 1900); // 1.8s animation + small buffer
     }
 }

@@ -1,4 +1,5 @@
 window.APP_CONFIG = {
+    baseUrl: "http://localhost:8000",
     apiEndpoint: "http://localhost:8000/synthesize",
     mockDelay: 1500
 };

@@ -139,8 +139,22 @@ async def health_check():
 @app.post("/translate")
 async def translate(request: TranslationRequest):
     try:
-        translated = GoogleTranslator(source='auto', target=request.target_lang).translate(request.text)
-        return {"translatedText": translated}
+        translator = GoogleTranslator(source='auto', target=request.target_lang)
+        
+        # Translate main summary
+        translated_text = translator.translate(request.text)
+        
+        # Translate nodes if provided
+        translated_nodes = []
+        if request.nodes:
+            # Batch translate nodes for efficiency
+            for node in request.nodes:
+                translated_nodes.append(translator.translate(node))
+        
+        return {
+            "translatedText": translated_text,
+            "translatedNodes": translated_nodes
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -236,11 +250,7 @@ def synthesize(
         nodes.append({"id": i, "type": "argument", "label": concept.title()})
         edges.append({"source": 1, "target": i})
     
-    # Add peripheral "Noise" nodes (dimmed in UI)
-    noise_count = 3
-    for i in range(len(nodes) + 1, len(nodes) + 1 + noise_count):
-        nodes.append({"id": i, "type": "noise", "label": "Filtered Data"})
-        edges.append({"source": 1, "target": i, "dashed": True})
+    # Add peripheral points to nodes would go here if needed...
 
     # NEW: Generate timeline data for 'Decision Replay'
     timeline = []

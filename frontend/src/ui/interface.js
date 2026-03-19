@@ -115,34 +115,34 @@ class UIManager {
         const summaryEl = document.getElementById('resultSummary');
         const nodesEl = document.getElementById('resultKeyNodes');
         
-        summaryEl.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>';
-        
+        if (!this.state.analysisResult) return;
+
         try {
-            // 1. Translate Summary
-            const sumResp = await fetch('/translate', {
+            summaryEl.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>';
+            
+            const response = await fetch(`${APP_CONFIG.baseUrl}/translate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: this.state.analysisResult.summary, target_lang: lang })
+                body: JSON.stringify({
+                    text: this.state.analysisResult.summary,
+                    target_lang: lang,
+                    nodes: this.state.analysisResult.keyNodes
+                })
             });
-            const sumData = await sumResp.json();
-            summaryEl.innerHTML = `<p>${sumData.translatedText}</p>`;
 
-            // 2. Translate Key Nodes
-            const translatedNodes = await Promise.all(this.state.analysisResult.keyNodes.map(async (text) => {
-                const resp = await fetch('/translate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, target_lang: lang })
-                });
-                const data = await resp.json();
-                return data.translatedText;
-            }));
+            if (!response.ok) throw new Error("Translation failed");
 
-            // 3. Re-render list with translated text
+            const data = await response.json();
+            const translatedText = data.translatedText;
+            const translatedNodes = data.translatedNodes || [];
+
+            // Update UI with translated content
+            summaryEl.innerHTML = `<p>${translatedText.replace(/\n/g, '<br>')}</p>`;
+
             nodesEl.innerHTML = '';
             translatedNodes.forEach((text, index) => {
                 const retentionPoints = this.state.analysisResult.retention_data || [];
-                const backContent = retentionPoints[index] || "Strategic context: This point represents a core synthesis node. Examine its relationship to the broader discussion.";
+                const backContent = retentionPoints[index] || "Strategic context: Core synthesis node.";
 
                 const item = document.createElement('div');
                 item.className = 'insight-item';
@@ -151,12 +151,12 @@ class UIManager {
                         <div class="insight-front">
                             <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${text}</span>
                             <a href="https://www.google.com/search?q=${encodeURIComponent(text)}" 
-                               target="_blank" class="fact-check-btn" title="Fact Check">
-                               <i class="fas fa-search"></i> Verify
+                               target="_blank" class="fact-check-btn">
+                               <i class="fas fa-search"></i>
                             </a>
                         </div>
                         <div class="insight-back">
-                            <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
+                            <i class="fas fa-lightbulb"></i> ${backContent}
                         </div>
                     </div>
                 `;

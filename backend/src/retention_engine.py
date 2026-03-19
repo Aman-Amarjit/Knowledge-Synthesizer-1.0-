@@ -48,14 +48,15 @@ class RetentionEngine:
             words = sent.words
             # Simpler heuristic: If sentence is long, extract the core S-V-O if possible
             # For now, we'll just take the first half and prepend a simplifying prefix
-            if len(words) > 12:
-                mid = len(words) // 2
-                simple = " ".join(words[:mid+1])
-                simple_sentences.append(f"In simple terms: {simple}.")
+            if len(words) > 15:
+                # Instead of truncating mid-sentence, we'll keep the full sentence 
+                # but ensure we only take the most significant ones.
+                simple_sentences.append(f"In simple terms: {sent}")
             else:
                 simple_sentences.append(str(sent))
                 
-        return " ".join(simple_sentences[:3]) # Keep it brief for ELI5
+        # Return up to 2 meaningful simplified sentences
+        return " ".join(simple_sentences[:2]).strip()
 
     def create_active_recall_quiz(self, text: str) -> List[Dict[str, Any]]:
         """Generates short questions based on key insights."""

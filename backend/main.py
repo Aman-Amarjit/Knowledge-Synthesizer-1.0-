@@ -277,9 +277,15 @@ def synthesize(
     # Ensure they are the same length
     retention_data = retention_data[:len(key_points)]
 
+    summary = "\n".join(key_points[:4]) # Simple summary for now
+    if not summary and sentences:
+        summary = str(sentences[0])
+    elif not summary:
+        summary = "No significant patterns detected. Try providing more context for a deeper synthesis."
+
     return {
         "analysis": {
-            "summary": str(blob.sentences[0]) if blob.sentences else "Discussion synthesized.",
+            "summary": summary,
             "keyNodes": key_points if key_points else [raw_content[:100] + "..."],
             "tags": tags,
             "retention_data": retention_data,

@@ -1428,10 +1428,10 @@
         .results-dashboard {
             display: grid;
             grid-template-columns: 400px 1fr;
-            grid-template-rows: auto auto 1fr; /* 1:Replay, 2:KeyPoints, 3:Brief */
+            grid-template-rows: auto 380px auto; /* Replay, KeyPoints/Graph, Brief */
             gap: 1.5rem;
-            height: calc(100vh - 180px);
-            min-height: 700px;
+            height: auto; /* Expand to content */
+            min-height: 800px;
         }
 
         .result-card {
@@ -1499,22 +1499,25 @@
         }
 
         .area-brief {
-            grid-column: 1;
+            grid-column: 1 / -1; /* Full Width */
             grid-row: 3;
-            overflow-y: auto;
+            min-height: 200px;
         }
 
         .area-graph {
             grid-column: 2;
-            grid-row: 2 / span 2;
+            grid-row: 2;
+            height: 380px;
         }
 
         .brief-content {
             color: var(--text-primary);
-            font-size: 1.05rem;
-            line-height: 1.7;
-            padding: 1rem 0;
-            overflow-y: visible; /* Prevent internal scrollbars */
+            font-size: 1.1rem;
+            line-height: 1.8;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            margin-top: 1rem;
         }
 
         /* Key Points Styling */

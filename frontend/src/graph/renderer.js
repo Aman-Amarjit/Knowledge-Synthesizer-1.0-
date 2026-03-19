@@ -122,38 +122,28 @@ class GraphRenderer {
                              node.type === 'counter' ? '--node-counter' : 
                              node.type === 'unresolved' ? '--node-unresolved' : '--node-concept';
             
-            let nodeColor = node.type === 'noise' ? 'rgba(255, 255, 255, 0.2)' : this.getCSSVar(colorKey);
-            const opacity = node.type === 'noise' ? 0.4 : (node.opacity || 1.0);
+            let nodeColor = this.getCSSVar(colorKey);
+            this.ctx.globalAlpha = node.opacity || 1.0;
 
-            this.ctx.globalAlpha = opacity;
-            
-            // Draw Node Circle
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
             this.ctx.fillStyle = nodeColor;
             this.ctx.fill();
             
-            // Central Glow for logic hub
             if (node.type === 'concept') {
                 this.ctx.shadowBlur = 20;
                 this.ctx.shadowColor = nodeColor;
-            } else if (node.type === 'noise') {
-                this.ctx.setLineDash([2, 4]); // Dashed border for noise
             }
 
             this.ctx.strokeStyle = '#fff';
             this.ctx.lineWidth = node.type === 'concept' ? 3 : 1;
             this.ctx.stroke();
-            this.ctx.setLineDash([]); // Reset dash
 
-            // Label Positioning (Avoid central overlap)
+            // Label
             this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
-            this.ctx.font = node.type === 'noise' ? 'italic 9px Inter, sans-serif' : 'bold 11px Inter, sans-serif';
+            this.ctx.font = 'bold 11px Inter, sans-serif';
             this.ctx.textAlign = 'center';
-            
-            // If noise, move label slightly further to prevent overlap with nearby circles
-            const labelYOffset = node.type === 'noise' ? node.r + 12 : node.r + 15;
-            this.ctx.fillText(node.label, node.x, node.y + labelYOffset);
+            this.ctx.fillText(node.label, node.x, node.y + node.r + 15);
             
             this.ctx.globalAlpha = 1.0;
             this.ctx.shadowBlur = 0;

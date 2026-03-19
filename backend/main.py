@@ -10,7 +10,9 @@ from datetime import datetime
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from textblob import TextBlob
+from deep_translator import GoogleTranslator
 import speech_recognition as sr
 from pydub import AudioSegment
 from pydub.silence import split_on_silence
@@ -80,6 +82,14 @@ class AudioEngine:
                 except:
                     pass
 
+class SynthesisRequest(BaseModel):
+    text: str = None
+    inputType: str = "text"
+
+class TranslationRequest(BaseModel):
+    text: str
+    target_lang: str
+
 # ==========================================
 # API SERVER & CORE LOGIC
 # ==========================================
@@ -121,6 +131,18 @@ def upload_visual(file: UploadFile = File(...), timestamp: str = Form("00:00")):
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
         raise HTTPException(status_code=500, detail=f"Visual upload failed: {str(e)}")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "online"}
+
+@app.post("/translate")
+async def translate(request: TranslationRequest):
+    try:
+        translated = GoogleTranslator(source='auto', target=request.target_lang).translate(request.text)
+        return {"translatedText": translated}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/synthesize")
 def synthesize(

@@ -106,6 +106,69 @@ class UIManager {
         else dashboard.classList.remove('study-mode');
     }
 
+    async translateResults(lang) {
+        if (lang === 'en') {
+            this.renderResults(); // Re-render original
+            return;
+        }
+
+        const summaryEl = document.getElementById('resultSummary');
+        const nodesEl = document.getElementById('resultKeyNodes');
+        
+        summaryEl.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>';
+        
+        try {
+            // 1. Translate Summary
+            const sumResp = await fetch('/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: this.state.analysisResult.summary, target_lang: lang })
+            });
+            const sumData = await sumResp.json();
+            summaryEl.innerHTML = `<p>${sumData.translatedText}</p>`;
+
+            // 2. Translate Key Nodes
+            const translatedNodes = await Promise.all(this.state.analysisResult.keyNodes.map(async (text) => {
+                const resp = await fetch('/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, target_lang: lang })
+                });
+                const data = await resp.json();
+                return data.translatedText;
+            }));
+
+            // 3. Re-render list with translated text
+            nodesEl.innerHTML = '';
+            translatedNodes.forEach((text, index) => {
+                const retentionPoints = this.state.analysisResult.retention_data || [];
+                const backContent = retentionPoints[index] || "Dive deep...";
+
+                const item = document.createElement('div');
+                item.className = 'insight-item';
+                item.innerHTML = `
+                    <div class="insight-card-inner">
+                        <div class="insight-front">
+                            <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${text}</span>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(text)}" 
+                               target="_blank" class="fact-check-btn" title="Fact Check">
+                               <i class="fas fa-search"></i> Verify
+                            </a>
+                        </div>
+                        <div class="insight-back">
+                            <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
+                        </div>
+                    </div>
+                `;
+                nodesEl.appendChild(item);
+            });
+
+        } catch (e) {
+            console.error("Translation failed:", e);
+            summaryEl.innerHTML = '<p style="color:red;">Translation error. Please try again.</p>';
+        }
+    }
+
     renderResults() {
         const summaryEl = document.getElementById('resultSummary');
         const nodesEl = document.getElementById('resultKeyNodes');
@@ -115,7 +178,6 @@ class UIManager {
             
             nodesEl.innerHTML = '';
             
-            // Get retention data if available (ELI5 or Flashcards)
             const retentionPoints = this.state.analysisResult.retention_data || [];
 
             this.state.analysisResult.keyNodes.forEach((nodeText, index) => {
@@ -126,7 +188,11 @@ class UIManager {
                 item.innerHTML = `
                     <div class="insight-card-inner">
                         <div class="insight-front">
-                            <i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${nodeText}
+                            <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${nodeText}</span>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(nodeText)}" 
+                               target="_blank" class="fact-check-btn" title="Fact Check">
+                               <i class="fas fa-search"></i> Verify
+                            </a>
                         </div>
                         <div class="insight-back">
                             <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}

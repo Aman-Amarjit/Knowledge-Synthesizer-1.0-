@@ -1517,11 +1517,19 @@
             transition: transform 0.6s;
             transform-style: preserve-3d;
             background: rgba(0, 123, 255, 0.05);
-            border-left: 3px solid var(--accent-color);
-            padding: 0.8rem;
             border-radius: 0 8px 8px 0;
             font-size: 0.9rem;
             color: var(--text-secondary);
+        }
+
+        .insight-front {
+            padding: 0.8rem;
+            border-left: 3px solid var(--accent-color);
+            background: rgba(0, 123, 255, 0.02);
+            border-radius: 0 8px 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
         }
 
         .study-mode .insight-item:hover .insight-card-inner {
@@ -1593,6 +1601,41 @@
 
         input:checked + .slider { background-color: var(--accent-color); }
         input:checked + .slider:before { transform: translateX(14px); }
+
+        /* Translation & Fact Check UI */
+        .results-actions {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-left: auto;
+        }
+
+        .translate-select {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 4px 10px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .fact-check-btn {
+            font-size: 0.75rem;
+            opacity: 0.4;
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .fact-check-btn:hover {
+            opacity: 1;
+            color: var(--accent-color);
+        }
         /* Brief Styling */
         .brief-content {
             font-size: 0.95rem;
@@ -2008,12 +2051,21 @@
                     <div class="card-header">
                         <span class="section-badge">3.1</span>
                         <span class="card-title">Key Points</span>
-                        <div class="study-toggle-container">
-                            <span>Study Mode</span>
-                            <label class="switch">
-                                <input type="checkbox" id="studyModeToggle" onchange="uiManager.toggleStudyMode(this.checked)">
-                                <span class="slider"></span>
-                            </label>
+                        <div class="results-actions">
+                            <select class="translate-select" onchange="uiManager.translateResults(this.value)">
+                                <option value="en">English</option>
+                                <option value="es">Spanish</option>
+                                <option value="fr">French</option>
+                                <option value="de">German</option>
+                                <option value="hi">Hindi</option>
+                            </select>
+                            <div class="study-toggle-container">
+                                <span>Study Mode</span>
+                                <label class="switch">
+                                    <input type="checkbox" id="studyModeToggle" onchange="uiManager.toggleStudyMode(this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div id="resultKeyNodes" class="key-points-list">

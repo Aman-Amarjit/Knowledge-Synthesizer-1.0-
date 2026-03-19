@@ -162,13 +162,50 @@ def synthesize(
     
     # 3. Process Linguistic Structure (Summary & Key Points)
     blob = TextBlob(raw_content)
-    # Get top 5 sentences by sentiment intensity as "key points"
-    key_points = [str(s) for s in sorted(blob.sentences, key=lambda s: abs(s.sentiment.polarity), reverse=True)[:5]]
+    sentences = list(blob.sentences)
     
+    # NEW: Enhanced Extraction Algorithm
+    # 3.1 Extract top keywords for scoring
+    keywords = [np.lower() for np in blob.noun_phrases if len(np) > 3]
+    top_keywords = set([w for w, _ in Counter(keywords).most_common(10)])
+    
+    # 3.2 Segment-based coverage to ensure "important points" are captured from start to end
+    num_segments = 4
+    segment_size = max(1, len(sentences) // num_segments)
+    key_points = []
+    
+    for i in range(num_segments):
+        start = i * segment_size
+        end = (i + 1) * segment_size if i < num_segments - 1 else len(sentences)
+        segment = sentences[start:end]
+        
+        if not segment: continue
+        
+        # Score each sentence in segment
+        scored_segment = []
+        for s in segment:
+            s_str = str(s)
+            if len(s_str) < 30: continue # Skip trivial sentences
+            
+            # Scoring factors
+            k_count = sum(1 for kw in top_keywords if kw in s_str.lower())
+            subj = s.sentiment.subjectivity
+            pol = abs(s.sentiment.polarity)
+            
+            score = (k_count * 3.0) + (subj * 5.0) + (pol * 2.0)
+            scored_segment.append((s_str, score))
+        
+        # Take top 2-3 from each segment
+        scored_segment.sort(key=lambda x: x[1], reverse=True)
+        key_points.extend([item[0] for item in scored_segment[:3]])
+
+    # Final Cap and Clean
+    key_points = list(dict.fromkeys(key_points))[:12] # Deduplicate and cap
+    if not key_points and sentences:
+        key_points = [str(s) for s in sentences[:8]]
+
     # 4. Generate Graph Nodes
-    # Use noun phrases to find main topics
-    concepts = [np.lower() for np in blob.noun_phrases if len(np) > 3]
-    top_concepts = [w for w, _ in Counter(concepts).most_common(6)]
+    top_concepts = [w for w, _ in Counter(keywords).most_common(6)]
     if not top_concepts: top_concepts = ["Core Discussion"]
 
     nodes = [{"id": 1, "type": "concept", "label": top_concepts[0].title()}]

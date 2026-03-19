@@ -240,15 +240,50 @@ def synthesize(
     if not key_points and sentences:
         key_points = [str(s) for s in sentences[:8]]
 
-    # 4. Generate Graph Nodes
-    top_concepts = [w for w, _ in Counter(keywords).most_common(6)]
+    # 4. Generate Sophisticated Graph Nodes
+    # 4.1 Scoring concepts by frequency
+    concept_counts = Counter(keywords)
+    top_concepts = [w for w, _ in concept_counts.most_common(8)]
     if not top_concepts: top_concepts = ["Core Discussion"]
 
-    nodes = [{"id": 1, "type": "concept", "label": top_concepts[0].title()}]
+    nodes = []
     edges = []
-    for i, concept in enumerate(top_concepts[1:], start=2):
-        nodes.append({"id": i, "type": "argument", "label": concept.title()})
-        edges.append({"source": 1, "target": i})
+    concept_to_id = {}
+
+    for i, concept in enumerate(top_concepts, start=1):
+        # Scale radius by frequency (min 15, max 35)
+        count = concept_counts[concept]
+        radius = min(35, max(15, 15 + count * 5))
+        
+        nodes.append({
+            "id": i, 
+            "type": "concept" if i == 1 else "argument", 
+            "label": concept.title(),
+            "r": radius
+        })
+        concept_to_id[concept.lower()] = i
+
+    # 4.2 Create Inter-connections based on co-occurrence in sentences
+    pair_counts = Counter()
+    for sent in sentences:
+        sent_text = str(sent).lower()
+        present = [c for c in top_concepts if c.lower() in sent_text]
+        for idx, c1 in enumerate(present):
+            for c2 in present[idx+1:]:
+                pair_counts[tuple(sorted((c1, c2)))] += 1
+
+    for (c1, c2), weight in pair_counts.items():
+        if c1.lower() in concept_to_id and c2.lower() in concept_to_id:
+            edges.append({
+                "source": concept_to_id[c1.lower()],
+                "target": concept_to_id[c2.lower()],
+                "weight": weight
+            })
+
+    # Fallback to star if no connections found
+    if not edges and len(nodes) > 1:
+        for i in range(2, len(nodes) + 1):
+            edges.append({"source": 1, "target": i})
     
     # Add peripheral points to nodes would go here if needed...
 

@@ -189,6 +189,7 @@ class UIManager {
             
             // Update UI
             slider.value = progress;
+            slider.style.setProperty('--p', `${progress}%`);
             statusEl.innerText = `Evolution Phase: ${event.status}`;
             timeEl.innerText = event.timestamp;
 

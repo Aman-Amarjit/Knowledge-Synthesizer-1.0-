@@ -1427,11 +1427,11 @@
 
         .results-dashboard {
             display: grid;
-            grid-template-columns: 350px 1fr;
-            grid-template-rows: auto 1fr;
+            grid-template-columns: 400px 1fr;
+            grid-template-rows: auto auto 1fr; /* 1:Replay, 2:KeyPoints, 3:Brief */
             gap: 1.5rem;
-            height: calc(100vh - 220px);
-            min-height: 600px;
+            height: calc(100vh - 180px);
+            min-height: 700px;
         }
 
         .result-card {
@@ -1485,22 +1485,35 @@
         }
 
         /* Specific Areas */
+        .replay-card {
+            grid-column: 1 / -1;
+            grid-row: 1;
+        }
+
         .area-keypoints {
             grid-column: 1;
-            grid-row: 1;
-            height: 400px; /* Increased and fixed to prevent jumps */
+            grid-row: 2;
+            height: 380px;
             display: flex;
             flex-direction: column;
         }
 
         .area-brief {
             grid-column: 1;
-            grid-row: 2;
+            grid-row: 3;
+            overflow-y: auto;
         }
 
         .area-graph {
             grid-column: 2;
-            grid-row: 1 / span 2;
+            grid-row: 2 / span 2;
+        }
+
+        .brief-content {
+            color: var(--text-primary);
+            font-size: 1rem;
+            line-height: 1.6;
+            padding: 0.5rem 0;
         }
 
         /* Key Points Styling */

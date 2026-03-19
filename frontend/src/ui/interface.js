@@ -236,11 +236,16 @@ class UIManager {
     }
 
     renderResults() {
+        console.log("Rendering results page...", this.state.analysisResult);
         const summaryEl = document.getElementById('resultSummary');
         const nodesEl = document.getElementById('resultKeyNodes');
 
         if (this.state.analysisResult) {
-            summaryEl.innerHTML = `<p>${this.state.analysisResult.summary}</p>`;
+            if (summaryEl) {
+                summaryEl.innerHTML = this.state.analysisResult.summary 
+                    ? `<p>${this.state.analysisResult.summary.replace(/\n/g, '<br>')}</p>`
+                    : `<p>Analysis complete. No summary available.</p>`;
+            }
             
             nodesEl.innerHTML = '';
             

@@ -730,6 +730,151 @@
             color: var(--text-primary);
         }
 
+        /* --- RESULT PAGE --- */
+        .result-view-container {
+            display: grid;
+            grid-template-columns: 1fr 1.8fr;
+            gap: 2rem;
+            margin-top: 2rem;
+            animation: fadeInScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .result-card {
+            background: rgba(var(--bg-secondary-rgb), 0.2);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 1.8rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .result-card h3 {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            color: var(--accent-color);
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .result-card h3 .badge {
+            background: var(--accent-color);
+            color: var(--bg-primary);
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            box-shadow: 0 0 15px var(--accent-color);
+        }
+
+        /* --- Key Insights List --- */
+        .insight-list {
+            max-height: 450px;
+            overflow-y: auto;
+            padding-right: 15px;
+        }
+
+        /* Modern Scrollbar */
+        .insight-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .insight-list::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        .insight-list::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 10px;
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .insight-item {
+            position: relative;
+            padding: 1rem 1rem 1rem 1.8rem;
+            margin-bottom: 1rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid var(--accent-color);
+            border-radius: 0 12px 12px 0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .insight-item:hover {
+            background: rgba(255, 255, 255, 0.06);
+            padding-left: 2rem;
+        }
+
+        .insight-item i {
+            position: absolute;
+            left: 0.6rem;
+            top: 1.2rem;
+            font-size: 0.7rem;
+            color: var(--accent-color);
+            opacity: 0.6;
+        }
+
+        /* --- Brief Summary --- */
+        .brief-content {
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: var(--text-secondary);
+            font-style: italic;
+            position: relative;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        .brief-content::before {
+            content: '“';
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-size: 3rem;
+            color: var(--accent-color);
+            opacity: 0.2;
+        }
+
+        /* --- Graph Card --- */
+        #graph-card {
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #graph-container {
+            flex: 1;
+            position: relative;
+            margin-top: 1rem;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
         .z-text p {
             font-size: 1.1rem;
             line-height: 1.6;

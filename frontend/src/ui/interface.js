@@ -105,12 +105,13 @@ class UIManager {
         const nodesEl = document.getElementById('resultKeyNodes');
 
         if (this.state.analysisResult) {
-            summaryEl.innerText = this.state.analysisResult.summary;
+            summaryEl.innerHTML = `<p>${this.state.analysisResult.summary}</p>`;
+            
             nodesEl.innerHTML = '';
             this.state.analysisResult.keyNodes.forEach(nodeText => {
                 const div = document.createElement('div');
-                div.classList.add('cool-point');
-                div.innerHTML = `<i class="fas fa-angle-right" style="margin-right:8px; opacity:0.6;"></i> ${nodeText}`;
+                div.className = 'insight-item';
+                div.innerHTML = `<i class="fas fa-chevron-right"></i> ${nodeText}`;
                 nodesEl.appendChild(div);
             });
         }

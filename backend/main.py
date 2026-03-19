@@ -89,6 +89,7 @@ class SynthesisRequest(BaseModel):
 class TranslationRequest(BaseModel):
     text: str
     target_lang: str
+    nodes: Optional[List[str]] = []
 
 # ==========================================
 # API SERVER & CORE LOGIC
@@ -250,6 +251,14 @@ def synthesize(
     key_points = list(dict.fromkeys(key_points))[:12] # Deduplicate and cap
     if not key_points and sentences:
         key_points = [str(s) for s in sentences[:8]]
+
+    # 3.3 Generate Summary
+    if key_points:
+        summary = " ".join(key_points[:2])
+    elif sentences:
+        summary = str(sentences[0])
+    else:
+        summary = raw_content[:200]
 
     # 4. Generate Sophisticated Graph (Co-occurrence Network)
     # 4.1 Extract meaningful concepts

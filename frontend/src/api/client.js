@@ -44,7 +44,7 @@ class APIClient {
             statusText.innerText = "Constructing Memory Maps...";
             subText.innerText = "Processing (3/3)";
 
-            const response = await fetch(APP_CONFIG.apiEndpoint, {
+            const response = await fetch(`${APP_CONFIG.baseUrl}/${APP_CONFIG.apiEndpoint}`, {
                 method: 'POST',
                 body: formData
             });

@@ -122,10 +122,12 @@ class GraphRenderer {
                              node.type === 'counter' ? '--node-counter' : 
                              node.type === 'unresolved' ? '--node-unresolved' : '--node-concept';
             
-            let nodeColor = this.getCSSVar(colorKey);
-            const opacity = node.type === 'noise' ? 0.3 : (node.opacity || 1.0);
+            let nodeColor = node.type === 'noise' ? 'rgba(255, 255, 255, 0.2)' : this.getCSSVar(colorKey);
+            const opacity = node.type === 'noise' ? 0.4 : (node.opacity || 1.0);
 
             this.ctx.globalAlpha = opacity;
+            
+            // Draw Node Circle
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
             this.ctx.fillStyle = nodeColor;
@@ -133,21 +135,26 @@ class GraphRenderer {
             
             // Central Glow for logic hub
             if (node.type === 'concept') {
-                this.ctx.shadowBlur = 15;
+                this.ctx.shadowBlur = 20;
                 this.ctx.shadowColor = nodeColor;
-            } else {
-                this.ctx.shadowBlur = 0;
+            } else if (node.type === 'noise') {
+                this.ctx.setLineDash([2, 4]); // Dashed border for noise
             }
 
             this.ctx.strokeStyle = '#fff';
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = node.type === 'concept' ? 3 : 1;
             this.ctx.stroke();
+            this.ctx.setLineDash([]); // Reset dash
 
-            // Label
+            // Label Positioning (Avoid central overlap)
             this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
-            this.ctx.font = node.type === 'noise' ? 'italic 10px Arial' : 'bold 12px Arial';
+            this.ctx.font = node.type === 'noise' ? 'italic 9px Inter, sans-serif' : 'bold 11px Inter, sans-serif';
             this.ctx.textAlign = 'center';
-            this.ctx.fillText(node.label, node.x, node.y + node.r + 15);
+            
+            // If noise, move label slightly further to prevent overlap with nearby circles
+            const labelYOffset = node.type === 'noise' ? node.r + 12 : node.r + 15;
+            this.ctx.fillText(node.label, node.x, node.y + labelYOffset);
+            
             this.ctx.globalAlpha = 1.0;
             this.ctx.shadowBlur = 0;
         });

@@ -1,6 +1,6 @@
 window.APP_CONFIG = {
-    baseUrl: "http://localhost:8000",
-    apiEndpoint: "http://localhost:8000/synthesize",
+    baseUrl: window.location.origin,
+    apiEndpoint: "/synthesize",
     mockDelay: 1500
 };
 

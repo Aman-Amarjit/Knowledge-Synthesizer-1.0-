@@ -133,11 +133,11 @@ class UIManager {
             if (!response.ok) throw new Error("Translation failed");
 
             const data = await response.json();
-            const translatedText = data.translatedText;
+            const translatedText = data.translatedText || this.state.analysisResult.summary || "";
             const translatedNodes = data.translatedNodes || [];
 
             // Update UI with translated content
-            summaryEl.innerHTML = `<p>${translatedText.replace(/\n/g, '<br>')}</p>`;
+            summaryEl.innerHTML = `<p>${translatedText.toString().replace(/\n/g, '<br>')}</p>`;
 
             nodesEl.innerHTML = '';
             translatedNodes.forEach((text, index) => {

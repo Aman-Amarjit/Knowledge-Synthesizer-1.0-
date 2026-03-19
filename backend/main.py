@@ -139,24 +139,35 @@ async def health_check():
 @app.post("/translate")
 async def translate(request: TranslationRequest):
     try:
+        # Avoid crashes on empty input
+        if not request.text or request.text.strip() == "":
+             return {"translatedText": "", "translatedNodes": []}
+
         translator = GoogleTranslator(source='auto', target=request.target_lang)
         
-        # Translate main summary
-        translated_text = translator.translate(request.text)
+        # Translate main summary with fallback
+        try:
+            translated_text = translator.translate(request.text) or request.text
+        except:
+            translated_text = request.text
         
         # Translate nodes if provided
         translated_nodes = []
         if request.nodes:
-            # Batch translate nodes for efficiency
             for node in request.nodes:
-                translated_nodes.append(translator.translate(node))
+                try:
+                    translated_nodes.append(translator.translate(node) or node)
+                except:
+                    translated_nodes.append(node)
         
         return {
             "translatedText": translated_text,
             "translatedNodes": translated_nodes
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"Translation logic error: {str(e)}")
+        # Partial success: Return original text instead of error
+        return {"translatedText": request.text, "translatedNodes": request.nodes or []}
 
 @app.post("/synthesize")
 def synthesize(
@@ -240,54 +251,61 @@ def synthesize(
     if not key_points and sentences:
         key_points = [str(s) for s in sentences[:8]]
 
-    # 4. Generate Sophisticated Graph Nodes
-    # 4.1 Scoring concepts by frequency
+    # 4. Generate Sophisticated Graph (Co-occurrence Network)
+    # 4.1 Extract meaningful concepts
     concept_counts = Counter(keywords)
-    top_concepts = [w for w, _ in concept_counts.most_common(8)]
-    if not top_concepts: top_concepts = ["Core Discussion"]
+    top_concepts = [w.lower() for w, _ in concept_counts.most_common(10)]
+    if not top_concepts: top_concepts = ["discussion"]
 
     nodes = []
     edges = []
     concept_to_id = {}
 
+    # 4.2 Create Central Concept + Secondary Hubs
     for i, concept in enumerate(top_concepts, start=1):
-        # Scale radius by frequency (min 15, max 35)
-        count = concept_counts[concept]
-        radius = min(35, max(15, 15 + count * 5))
+        freq = concept_counts[concept]
+        size = min(40, max(18, 18 + freq * 3))
         
+        # Color group based on hierarchy
+        n_type = "concept" if i == 1 else "argument"
+        if i > 5: n_type = "unresolved" # Use 'Unknown' color for less frequent
+
         nodes.append({
             "id": i, 
-            "type": "concept" if i == 1 else "argument", 
+            "type": n_type, 
             "label": concept.title(),
-            "r": radius
+            "r": size
         })
-        concept_to_id[concept.lower()] = i
+        concept_to_id[concept] = i
 
-    # 4.2 Create Inter-connections based on co-occurrence in sentences
-    pair_counts = Counter()
+    # 4.3 Detect Co-occurrence for meaningful links
+    pair_weights = Counter()
     for sent in sentences:
-        sent_text = str(sent).lower()
-        present = [c for c in top_concepts if c.lower() in sent_text]
+        sent_words = set(str(sent).lower().split())
+        # Find which of our top concepts are in this sentence
+        present = [c for c in top_concepts if c in sent_words or any(w in c for w in sent_words)]
+        
+        # Link all concepts in the same sentence
         for idx, c1 in enumerate(present):
             for c2 in present[idx+1:]:
-                pair_counts[tuple(sorted((c1, c2)))] += 1
+                pair_weights[tuple(sorted((c1, c2)))] += 1
 
-    for (c1, c2), weight in pair_counts.items():
-        if c1.lower() in concept_to_id and c2.lower() in concept_to_id:
+    # 4.4 Build final edge list with weights
+    for (c1, c2), weight in pair_weights.items():
+        if c1 in concept_to_id and c2 in concept_to_id:
             edges.append({
-                "source": concept_to_id[c1.lower()],
-                "target": concept_to_id[c2.lower()],
-                "weight": weight
+                "source": concept_to_id[c1],
+                "target": concept_to_id[c2],
+                "weight": weight,
+                "label": "Related" if weight < 2 else "Focus"
             })
 
-    # Fallback to star if no connections found
-    if not edges and len(nodes) > 1:
-        for i in range(2, len(nodes) + 1):
-            edges.append({"source": 1, "target": i})
-    
-    # Add peripheral points to nodes would go here if needed...
+    # 4.5 Ensure everything is at least connected to the center
+    for i in range(2, len(nodes) + 1):
+        if not any(e['source'] == 1 and e['target'] == i or e['source'] == i and e['target'] == 1 for e in edges):
+            edges.append({"source": 1, "target": i, "weight": 1})
 
-    # NEW: Generate timeline data for 'Decision Replay'
+    # 5. Generate timeline data for 'Decision Replay'
     timeline = []
     chunk_size = max(1, len(sentences) // 10)
     for i in range(min(10, len(sentences) // chunk_size + 1)):
@@ -296,7 +314,6 @@ def synthesize(
         chunk = sentences[start_idx:end_idx]
         if not chunk: continue
         
-        # Determine sentiment of this chunk
         chunk_blob = TextBlob(" ".join([str(s) for s in chunk]))
         polarity = chunk_blob.sentiment.polarity
         status = "Agreement Rising" if polarity > 0.1 else "Debate Ongoing" if polarity < -0.1 else "Neutral Exploration"
@@ -308,25 +325,16 @@ def synthesize(
             "sentiment": "positive" if polarity > 0.1 else "negative" if polarity < -0.1 else "neutral"
         })
 
-    # NEW: Generate retention data for each key point (ELI5 style)
+    # 6. Generate retention data (ELI5 style)
     retention_data = []
     for point in key_points:
-        # Simplify the point for the "Back" of the card
         simple = retention.generate_eli5(point)
-        # Robust fallback: if simple is same as point or too short, use a themed prompt
         if not simple or len(simple) < 20 or simple.strip() == point.strip():
-            retention_data.append(f"Strategic context: This point emphasizes the core logic of {point[:30]}... Examine how it connects to the broader synthesis.")
+            retention_data.append(f"Strategic context: Core logic of {point[:30]}...")
         else:
             retention_data.append(simple)
     
-    # Ensure they are the same length
     retention_data = retention_data[:len(key_points)]
-
-    summary = "\n".join(key_points[:4]) # Simple summary for now
-    if not summary and sentences:
-        summary = str(sentences[0])
-    elif not summary:
-        summary = "No significant patterns detected. Try providing more context for a deeper synthesis."
 
     return {
         "analysis": {

@@ -214,11 +214,19 @@ def synthesize(
         nodes.append({"id": i, "type": "argument", "label": concept.title()})
         edges.append({"source": 1, "target": i})
 
+    # NEW: Generate retention data for each key point (ELI5 style)
+    retention_data = []
+    for point in key_points:
+        # Simplify the point for the "Back" of the card
+        simple = retention.generate_eli5(point)
+        retention_data.append(simple if len(simple) > 10 else f"Think about how {point[:20]}... applies here.")
+
     return {
         "analysis": {
             "summary": str(blob.sentences[0]) if blob.sentences else "Discussion synthesized.",
             "keyNodes": key_points if key_points else [raw_content[:100] + "..."],
             "tags": tags,
+            "retention_data": retention_data,
             "retention": {
                 "flashcards": flashcards,
                 "quiz": quiz,

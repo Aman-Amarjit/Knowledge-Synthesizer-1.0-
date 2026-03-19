@@ -95,84 +95,49 @@ class GraphRenderer {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         
         // --- DRAW LINKS ---
-        this.ctx.lineWidth = 1.5;
-        this.ctx.globalAlpha = 0.4;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeStyle = this.isDark ? '#233554' : '#ccc';
         
         graphData.edges.forEach(edge => {
             const start = graphData.nodes.find(n => n.id === edge.source);
             const end = graphData.nodes.find(n => n.id === edge.target);
 
             if (start && end) {
-                const gradient = this.ctx.createLinearGradient(start.x, start.y, end.x, end.y);
-                gradient.addColorStop(0, this.isDark ? 'rgba(75, 0, 130, 0.6)' : 'rgba(200, 200, 200, 0.6)');
-                gradient.addColorStop(1, this.isDark ? 'rgba(75, 0, 130, 0.2)' : 'rgba(200, 200, 200, 0.2)');
-                
                 this.ctx.beginPath();
                 this.ctx.moveTo(start.x, start.y);
                 this.ctx.lineTo(end.x, end.y);
-                this.ctx.strokeStyle = gradient;
                 
-                if (edge.dashed) {
-                    this.ctx.setLineDash([4, 4]);
-                    this.ctx.lineDashOffset = (Date.now() / 50) % 8;
-                } else {
-                    this.ctx.setLineDash([]);
-                }
+                if (edge.dashed) this.ctx.setLineDash([5, 5]);
+                else this.ctx.setLineDash([]);
                 
                 this.ctx.stroke();
             }
         });
         
         this.ctx.setLineDash([]);
-        this.ctx.globalAlpha = 1.0;
 
         // --- DRAW NODES ---
         graphData.nodes.forEach(node => {
-            let colorKey = '--node-concept';
-            if (node.type === 'argument') colorKey = '--node-argument';
-            else if (node.type === 'counter') colorKey = '--node-counter';
-            else if (node.type === 'unresolved') colorKey = '--node-unresolved';
-
+            const colorKey = node.type === 'argument' ? '--node-argument' : 
+                             node.type === 'counter' ? '--node-counter' : 
+                             node.type === 'unresolved' ? '--node-unresolved' : '--node-concept';
+            
             const nodeColor = this.getCSSVar(colorKey);
 
-            // Node Glow
-            this.ctx.shadowBlur = 15;
-            this.ctx.shadowColor = nodeColor;
-            
-            // Outer Ring
-            this.ctx.beginPath();
-            this.ctx.arc(node.x, node.y, node.r + 2, 0, Math.PI * 2);
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-
-            // Main Circle
             this.ctx.beginPath();
             this.ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
             this.ctx.fillStyle = nodeColor;
             this.ctx.fill();
             
-            // Inner Shine
-            const radial = this.ctx.createRadialGradient(node.x - node.r/3, node.y - node.r/3, 2, node.x, node.y, node.r);
-            radial.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
-            radial.addColorStop(1, 'transparent');
-            this.ctx.fillStyle = radial;
-            this.ctx.fill();
-
-            // Reset Shadow
-            this.ctx.shadowBlur = 0;
+            this.ctx.strokeStyle = '#fff';
+            this.ctx.lineWidth = 2;
+            this.ctx.stroke();
 
             // Label
-            this.ctx.fillStyle = this.isDark ? '#fff' : '#1a1a1a';
-            this.ctx.font = '500 13px "Inter", "Segoe UI", sans-serif';
+            this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
+            this.ctx.font = 'bold 12px Arial';
             this.ctx.textAlign = 'center';
-            this.ctx.textBaseline = 'top';
-            
-            // Multi-line label (if needed) or simple shadow text
-            this.ctx.shadowBlur = 4;
-            this.ctx.shadowColor = 'rgba(0,0,0,0.5)';
-            this.ctx.fillText(node.label, node.x, node.y + node.r + 10);
-            this.ctx.shadowBlur = 0;
+            this.ctx.fillText(node.label, node.x, node.y + node.r + 15);
         });
     }
 

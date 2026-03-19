@@ -100,6 +100,12 @@ class UIManager {
         }
     }
 
+    toggleStudyMode(enabled) {
+        const dashboard = document.querySelector('.results-dashboard');
+        if (enabled) dashboard.classList.add('study-mode');
+        else dashboard.classList.remove('study-mode');
+    }
+
     renderResults() {
         const summaryEl = document.getElementById('resultSummary');
         const nodesEl = document.getElementById('resultKeyNodes');
@@ -108,11 +114,26 @@ class UIManager {
             summaryEl.innerHTML = `<p>${this.state.analysisResult.summary}</p>`;
             
             nodesEl.innerHTML = '';
-            this.state.analysisResult.keyNodes.forEach(nodeText => {
-                const div = document.createElement('div');
-                div.className = 'insight-item';
-                div.innerHTML = `<i class="fas fa-chevron-right"></i> ${nodeText}`;
-                nodesEl.appendChild(div);
+            
+            // Get retention data if available (ELI5 or Flashcards)
+            const retentionPoints = this.state.analysisResult.retention_data || [];
+
+            this.state.analysisResult.keyNodes.forEach((nodeText, index) => {
+                const backContent = retentionPoints[index] || "Dive deep into this concept for better retention.";
+                
+                const item = document.createElement('div');
+                item.className = 'insight-item';
+                item.innerHTML = `
+                    <div class="insight-card-inner">
+                        <div class="insight-front">
+                            <i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${nodeText}
+                        </div>
+                        <div class="insight-back">
+                            <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
+                        </div>
+                    </div>
+                `;
+                nodesEl.appendChild(item);
             });
         }
     }

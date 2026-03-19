@@ -41,20 +41,21 @@ class RetentionEngine:
 
     def generate_eli5(self, text: str) -> str:
         """Converts complex text into simpler language using basic linguistic rules."""
-        # Note: In a production environment, this would call the Gemini API
-        # Here we apply a 'Simplicity filter': shorten sentences and remove jargon
         blob = TextBlob(text)
         simple_sentences = []
         
         for sent in blob.sentences:
-            # Only keep the most direct parts of the sentence
             words = sent.words
-            if len(words) > 15:
-                simple_sentences.append(f"Basically, {words[0]} {words[1]} ... {words[-1]}.")
+            # Simpler heuristic: If sentence is long, extract the core S-V-O if possible
+            # For now, we'll just take the first half and prepend a simplifying prefix
+            if len(words) > 12:
+                mid = len(words) // 2
+                simple = " ".join(words[:mid+1])
+                simple_sentences.append(f"In simple terms: {simple}.")
             else:
                 simple_sentences.append(str(sent))
                 
-        return " ".join(simple_sentences)
+        return " ".join(simple_sentences[:3]) # Keep it brief for ELI5
 
     def create_active_recall_quiz(self, text: str) -> List[Dict[str, Any]]:
         """Generates short questions based on key insights."""
@@ -66,12 +67,18 @@ class RetentionEngine:
         
         for sent in sentences[:5]:
             sent_str = str(sent)
-            # Create a fill-in-the-blank style question
             words = sent_str.split()
-            if len(words) > 8:
-                # Hide the most 'important' (longest) word
-                target_word = max(words, key=len)
-                question = sent_str.replace(target_word, "__________")
+            # Only process reasonably long sentences to avoid trivial questions
+            if len(words) > 10:
+                # Find the longest word that isn't a common stopword (basic filter)
+                candidates = [w for w in words if len(w) > 5 and w.lower() not in ['because', 'however', 'therefore']]
+                if not candidates:
+                    continue
+                    
+                target_word = max(candidates, key=len)
+                # Ensure we only replace whole words
+                question = re.sub(rf'\b{re.escape(target_word)}\b', "__________", sent_str, flags=re.IGNORECASE)
+                
                 quiz.append({
                     "question": f"Complete the thought: {question}",
                     "answer": target_word

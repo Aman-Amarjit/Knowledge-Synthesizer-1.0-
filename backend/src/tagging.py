@@ -50,13 +50,13 @@ class SmartTagger:
                 formatted = "".join(w.title() for w in np.split())
                 phrases.append(formatted)
         
-        # Add top 4 most frequent concepts
+        # Add top 5 most frequent concepts
         if phrases:
             # exclude generic words if they slip through
-            stop_hashes = {'Speaker', 'Today', 'Hello'}
-            clean_phrases = [p for p in phrases if p not in stop_hashes]
+            stop_hashes = {'Speaker', 'Today', 'Hello', 'Think', 'Know', 'Something', 'Discussion'}
+            clean_phrases = [p for p in phrases if p not in stop_hashes and len(p) > 2]
             
-            top_concepts = [item[0] for item in Counter(clean_phrases).most_common(4)]
+            top_concepts = [item[0] for item in Counter(clean_phrases).most_common(5)]
             for concept in top_concepts:
                 tags.add(f"#{concept}")
 

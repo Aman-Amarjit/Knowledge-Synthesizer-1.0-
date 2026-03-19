@@ -7,3 +7,5 @@ SpeechRecognition==3.10.0
 pydub==0.25.1
 aiofiles==23.1.0
 httpx<0.28.0
+Pillow>=10.0.0
+pytesseract>=0.3.10

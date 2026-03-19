@@ -1,7 +1,8 @@
 import os
 import shutil
 import re
-from typing import Optional, List, Dict, Any
+import uuid
+from typing import Optional, List, Dict, Any, Tuple
 from collections import Counter
 from datetime import datetime
 
@@ -49,31 +50,35 @@ class AudioEngine:
     def __init__(self):
         self.recognizer = sr.Recognizer()
 
-    def transcribe(self, file_path: str) -> str:
+    def transcribe(self, file_path: str) -> Tuple[str, Optional[str]]:
+        """Returns (transcript, error_message)"""
         if not FFMPEG_READY:
-            return "Error: FFmpeg not detected. Audio processing is unavailable."
+            return "", "FFmpeg not detected. Audio processing is unavailable."
 
+        wav_path = None
         try:
             # Load and Pre-process
             sound = AudioSegment.from_file(file_path)
             sound = normalize(sound)
             
             # Export to WAV for the recognizer
-            wav_path = file_path + ".wav"
+            wav_path = f"{file_path}_{uuid.uuid4().hex}.wav"
             sound.export(wav_path, format="wav")
             
-            transcript = ""
             with sr.AudioFile(wav_path) as source:
                 audio_data = self.recognizer.record(source)
                 transcript = self.recognizer.recognize_google(audio_data)
-            
-            # Cleanup
-            if os.path.exists(wav_path):
-                os.remove(wav_path)
                 
-            return transcript
+            return transcript, None
         except Exception as e:
-            return f"[Transcription Failed: {str(e)}]"
+            return "", f"Transcription failed: {str(e)}"
+        finally:
+            # Cleanup
+            if wav_path and os.path.exists(wav_path):
+                try:
+                    os.remove(wav_path)
+                except:
+                    pass
 
 # ==========================================
 # API SERVER & CORE LOGIC
@@ -101,16 +106,24 @@ os.makedirs("static_visuals", exist_ok=True)
 app.mount("/visuals", StaticFiles(directory="static_visuals"), name="visuals")
 
 @app.post("/upload_visual")
-async def upload_visual(file: UploadFile = File(...), timestamp: str = Form("00:00")):
-    tmp_path = f"temp_{file.filename}"
-    with open(tmp_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+def upload_visual(file: UploadFile = File(...), timestamp: str = Form("00:00")):
+    # Use UUID to prevent collisions
+    file_ext = os.path.splitext(file.filename)[1]
+    tmp_path = f"temp_visual_{uuid.uuid4().hex}{file_ext}"
     
-    result = visual_manager.save_and_process(tmp_path, file.filename, timestamp)
-    return result
+    try:
+        with open(tmp_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        result = visual_manager.save_and_process(tmp_path, file.filename, timestamp)
+        return result
+    except Exception as e:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise HTTPException(status_code=500, detail=f"Visual upload failed: {str(e)}")
 
 @app.post("/synthesize")
-async def synthesize(
+def synthesize(
     file: Optional[UploadFile] = File(None),
     text: Optional[str] = Form(None),
     inputType: Optional[str] = Form("text")
@@ -118,15 +131,23 @@ async def synthesize(
     # 1. Capture Raw Content
     raw_content = ""
     if inputType in ["live", "voice"] and file:
-        tmp_audio = f"temp_audio_{file.filename}"
-        with open(tmp_audio, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+        file_ext = os.path.splitext(file.filename)[1] or ".tmp"
+        tmp_audio = f"temp_audio_{uuid.uuid4().hex}{file_ext}"
         
-        # Real Transcription instead of placeholder
-        raw_content = audio_engine.transcribe(tmp_audio)
-        
-        if os.path.exists(tmp_audio):
-            os.remove(tmp_audio)
+        try:
+            with open(tmp_audio, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
+            
+            # Real Transcription
+            transcript, error = audio_engine.transcribe(tmp_audio)
+            
+            if error:
+                raise HTTPException(status_code=422, detail=error)
+            
+            raw_content = transcript
+        finally:
+            if os.path.exists(tmp_audio):
+                os.remove(tmp_audio)
     else:
         raw_content = text or ""
 

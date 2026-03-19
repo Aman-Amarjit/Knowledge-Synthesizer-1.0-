@@ -195,7 +195,7 @@ class UIManager {
             // Add item to list
             const item = document.createElement('div');
             item.className = 'insight-item';
-            item.style.animation = 'scaleIn 0.5s ease-out forwards';
+            item.style.animation = 'elasticSlideIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
             
             // We'll use the i-th retention data point if this looks like a main key point, 
             // otherwise a generic "evolutionary context"

@@ -159,7 +159,7 @@ class GraphRenderer {
     }
 
     highlightNodeByLabel(label, pulse = false) {
-        if (!label || !this.graphData.nodes) return;
+        if (!label || !this.graphRenderer && !this.graphData.nodes) return;
         const node = this.graphData.nodes.find(n => 
             n.label.toLowerCase().includes(label.toLowerCase()) || 
             label.toLowerCase().includes(n.label.toLowerCase())
@@ -167,16 +167,20 @@ class GraphRenderer {
         if (node) {
             const originalR = node.r;
             if (pulse) {
-                let growing = true;
-                const interval = setInterval(() => {
-                    if (growing) node.r += 1;
-                    else node.r -= 1;
-                    if (node.r > originalR * 1.5) growing = false;
-                    if (node.r <= originalR) {
+                const startTime = Date.now();
+                const duration = 2000; // 2 seconds of pulsing
+                const animatePulse = () => {
+                    const elapsed = Date.now() - startTime;
+                    if (elapsed < duration) {
+                        // Organic sine wave pulse
+                        const scale = 1 + Math.sin(elapsed * 0.01) * 0.3;
+                        node.r = originalR * scale;
+                        requestAnimationFrame(animatePulse);
+                    } else {
                         node.r = originalR;
-                        clearInterval(interval);
                     }
-                }, 30);
+                };
+                animatePulse();
             } else {
                 node.r = originalR * 1.6;
                 setTimeout(() => { node.r = originalR; }, 1000);

@@ -616,23 +616,23 @@
         }
 
         @keyframes move-smooth-1 {
-            0%, 100% { top: 20%; left: 15%; transform: translate(0, 0) rotate(-2deg); }
-            50% { top: 25%; left: 35%; transform: translate(5px, -10px) rotate(2deg); }
+            0%, 100% { top: 35%; left: 40%; transform: translate(0, 0) rotate(0deg); }
+            50% { top: 38%; left: 42%; transform: translate(2px, 2px) rotate(1deg); }
         }
 
         @keyframes move-smooth-2 {
-            0%, 100% { top: 65%; left: 20%; transform: translate(0, 0) rotate(1deg); }
-            50% { top: 60%; left: 10%; transform: translate(-10px, 5px) rotate(-1deg); }
+            0%, 100% { top: 60%; left: 15%; transform: translate(0, 0) rotate(-1deg); }
+            50% { top: 63%; left: 18%; transform: translate(-2px, 3px) rotate(0deg); }
         }
 
         @keyframes move-smooth-3 {
-            0%, 100% { top: 60%; left: 70%; transform: translate(0, 0) rotate(-1deg); }
-            50% { top: 70%; left: 75%; transform: translate(10px, -5px) rotate(1deg); }
+            0%, 100% { top: 60%; left: 70%; transform: translate(0, 0) rotate(1deg); }
+            50% { top: 63%; left: 67%; transform: translate(3px, -2px) rotate(0deg); }
         }
 
         @keyframes move-smooth-4 {
-            0%, 100% { top: 15%; left: 75%; transform: translate(0, 0) rotate(2deg); }
-            50% { top: 10%; left: 65%; transform: translate(-5px, 10px) rotate(-2deg); }
+            0%, 100% { top: 10%; left: 75%; transform: translate(0, 0) rotate(5deg); }
+            50% { top: 12%; left: 73%; transform: translate(-3px, 2px) rotate(3deg); }
         }
 
         .demo-lines-svg {
@@ -1494,14 +1494,13 @@
 
                 <div class="demo-visualizer">
                     <svg class="demo-lines-svg" viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Curved Organic Lines -->
-                        <path class="demo-line-path" d="M150,60 Q300,125 150,190" />
-                        <path class="demo-line-path" d="M150,60 Q450,40 450,60" />
-                        <path class="demo-line-path" d="M450,190 Q300,125 150,190" />
+                        <!-- Symmetrical Curved Connections to Logic (Center) -->
+                        <path class="demo-line-path" d="M110,160 Q150,120 250,110" /> <!-- Debate -> Logic -->
+                        <path class="demo-line-path" d="M490,160 Q450,120 350,110" /> <!-- Fact -> Logic -->
                         
                         <!-- Energy Pulses -->
-                        <path class="pulse-path" d="M150,60 Q300,125 150,190" />
-                        <path class="pulse-path" d="M450,190 Q300,125 150,190" />
+                        <path class="pulse-path" d="M110,160 Q150,120 250,110" />
+                        <path class="pulse-path" d="M490,160 Q450,120 350,110" />
                     </svg>
 
                     <div class="demo-node d-1"><i class="fas fa-brain"></i> Logic</div>

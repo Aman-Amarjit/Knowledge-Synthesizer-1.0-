@@ -556,114 +556,83 @@
         /* Dynamic Visual Demo */
         .demo-visualizer {
             width: 100%;
-            max-width: 500px;
-            height: 180px;
-            margin: 0 auto;
+            max-width: 600px;
+            height: 250px;
+            margin: 2rem auto;
             position: relative;
-            border-radius: 12px;
-            background: var(--bg-primary);
+            border-radius: 20px;
+            background: rgba(var(--bg-primary-rgb), 0.1);
+            backdrop-filter: blur(5px);
             border: 1px solid var(--border-color);
-            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
         }
 
         .demo-node {
             position: absolute;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 700;
             color: #fff;
-            transition: all 1.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .demo-node:hover {
+            transform: scale(1.15) !important;
+            filter: brightness(1.2);
+            z-index: 20;
         }
 
         .d-1 {
-            background: var(--node-concept);
-            animation: move1 4s infinite alternate;
+            background: rgba(0, 123, 255, 0.4);
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
+            animation: move-smooth-1 6s infinite ease-in-out;
         }
 
         .d-2 {
-            background: var(--node-argument);
-            animation: move2 4s infinite alternate;
+            background: rgba(40, 167, 69, 0.4);
+            box-shadow: 0 0 20px rgba(40, 167, 69, 0.4);
+            animation: move-smooth-2 7s infinite ease-in-out;
         }
 
         .d-3 {
-            background: var(--node-counter);
-            animation: move3 4s infinite alternate;
+            background: rgba(255, 111, 97, 0.4);
+            box-shadow: 0 0 20px rgba(255, 111, 97, 0.4);
+            animation: move-smooth-3 5s infinite ease-in-out;
         }
 
         .d-4 {
-            background: var(--node-unresolved);
-            animation: move4 4s infinite alternate;
+            background: rgba(108, 117, 125, 0.4);
+            box-shadow: 0 0 20px rgba(108, 117, 125, 0.4);
+            animation: move-smooth-4 8s infinite ease-in-out;
         }
 
-        @keyframes move1 {
-            0% {
-                top: 20%;
-                left: 10%;
-                transform: rotate(-10deg);
-                opacity: 0.7;
-            }
-
-            40%,
-            100% {
-                top: 40%;
-                left: 40%;
-                transform: rotate(0deg) scale(1.2);
-                opacity: 1;
-                z-index: 10;
-            }
+        @keyframes move-smooth-1 {
+            0%, 100% { top: 20%; left: 15%; transform: translate(0, 0) rotate(-2deg); }
+            50% { top: 25%; left: 35%; transform: translate(5px, -10px) rotate(2deg); }
         }
 
-        @keyframes move2 {
-            0% {
-                top: 70%;
-                left: 80%;
-                transform: rotate(15deg);
-                opacity: 0.7;
-            }
-
-            40%,
-            100% {
-                top: 70%;
-                left: 20%;
-                transform: rotate(0deg);
-                opacity: 1;
-            }
+        @keyframes move-smooth-2 {
+            0%, 100% { top: 65%; left: 20%; transform: translate(0, 0) rotate(1deg); }
+            50% { top: 60%; left: 10%; transform: translate(-10px, 5px) rotate(-1deg); }
         }
 
-        @keyframes move3 {
-            0% {
-                top: 10%;
-                left: 70%;
-                transform: rotate(-5deg);
-                opacity: 0.7;
-            }
-
-            40%,
-            100% {
-                top: 70%;
-                left: 60%;
-                transform: rotate(0deg);
-                opacity: 1;
-            }
+        @keyframes move-smooth-3 {
+            0%, 100% { top: 60%; left: 70%; transform: translate(0, 0) rotate(-1deg); }
+            50% { top: 70%; left: 75%; transform: translate(10px, -5px) rotate(1deg); }
         }
 
-        @keyframes move4 {
-            0% {
-                top: 60%;
-                left: 10%;
-                transform: rotate(20deg);
-                opacity: 0.7;
-            }
-
-            40%,
-            100% {
-                top: 20%;
-                left: 70%;
-                transform: rotate(0deg);
-                opacity: 1;
-            }
+        @keyframes move-smooth-4 {
+            0%, 100% { top: 15%; left: 75%; transform: translate(0, 0) rotate(2deg); }
+            50% { top: 10%; left: 65%; transform: translate(-5px, 10px) rotate(-2deg); }
         }
 
         .demo-lines-svg {
@@ -676,31 +645,30 @@
         }
 
         .demo-line-path {
-            stroke: var(--border-color);
+            stroke: var(--accent-color);
+            stroke-width: 1.5;
+            fill: none;
+            opacity: 0.2;
+            stroke-dasharray: 5, 5;
+            animation: lineFlow 30s linear infinite;
+        }
+
+        .pulse-path {
+            stroke: var(--accent-color);
             stroke-width: 2;
             fill: none;
-            stroke-dasharray: 100;
-            stroke-dashoffset: 100;
-            animation: drawLine 4s infinite alternate;
+            stroke-dasharray: 20, 100;
+            stroke-dashoffset: 120;
+            animation: energyPulse 3s linear infinite;
+            filter: blur(1px);
         }
 
-        [data-theme="dark"] .demo-line-path {
-            stroke: rgba(255, 255, 255, 0.2);
+        @keyframes lineFlow {
+            to { stroke-dashoffset: -100; }
         }
 
-        @keyframes drawLine {
-
-            0%,
-            35% {
-                stroke-dashoffset: 100;
-                opacity: 0;
-            }
-
-            45%,
-            100% {
-                stroke-dashoffset: 0;
-                opacity: 1;
-            }
+        @keyframes energyPulse {
+            to { stroke-dashoffset: 0; }
         }
 
         .btn-primary {
@@ -1525,17 +1493,21 @@
                 </div>
 
                 <div class="demo-visualizer">
-                    <svg class="demo-lines-svg" xmlns="http://www.w3.org/2000/svg">
-                        <!-- Lines connecting nodes (visible only during structured phase) -->
-                        <path class="demo-line-path" d="M250,72 L125,126" /> <!-- Center to Left -->
-                        <path class="demo-line-path" d="M250,72 L325,126" /> <!-- Center to Right -->
-                        <path class="demo-line-path" d="M325,126 L375,36" /> <!-- Right to Top-Right -->
+                    <svg class="demo-lines-svg" viewBox="0 0 600 250" xmlns="http://www.w3.org/2000/svg">
+                        <!-- Curved Organic Lines -->
+                        <path class="demo-line-path" d="M150,60 Q300,125 150,190" />
+                        <path class="demo-line-path" d="M150,60 Q450,40 450,60" />
+                        <path class="demo-line-path" d="M450,190 Q300,125 150,190" />
+                        
+                        <!-- Energy Pulses -->
+                        <path class="pulse-path" d="M150,60 Q300,125 150,190" />
+                        <path class="pulse-path" d="M450,190 Q300,125 150,190" />
                     </svg>
 
-                    <div class="demo-node d-1">Logic</div>
-                    <div class="demo-node d-2">Debate</div>
-                    <div class="demo-node d-3">Fact</div>
-                    <div class="demo-node d-4">Noise</div>
+                    <div class="demo-node d-1"><i class="fas fa-brain"></i> Logic</div>
+                    <div class="demo-node d-2"><i class="fas fa-comments"></i> Debate</div>
+                    <div class="demo-node d-3"><i class="fas fa-check-circle"></i> Fact</div>
+                    <div class="demo-node d-4"><i class="fas fa-ghost"></i> Noise</div>
                 </div>
                 <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-secondary); opacity: 0.7;">
                     *AI organizing unstructured input in real-time

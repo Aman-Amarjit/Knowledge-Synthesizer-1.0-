@@ -169,6 +169,72 @@ class UIManager {
         }
     }
 
+    async startReplay() {
+        if (!this.state.analysisResult || !this.state.analysisResult.timeline) return;
+        
+        const timeline = this.state.analysisResult.timeline;
+        const nodesEl = document.getElementById('resultKeyNodes');
+        const statusEl = document.getElementById('replayStatus');
+        const timeEl = document.getElementById('replayTime');
+        const slider = document.getElementById('timelineSlider');
+        const btn = document.getElementById('replayBtn');
+
+        btn.disabled = true;
+        nodesEl.innerHTML = '';
+        slider.value = 0;
+
+        for (let i = 0; i < timeline.length; i++) {
+            const event = timeline[i];
+            const progress = ((i + 1) / timeline.length) * 100;
+            
+            // Update UI
+            slider.value = progress;
+            statusEl.innerText = `Evolution Phase: ${event.status}`;
+            timeEl.innerText = event.timestamp;
+
+            // Add item to list
+            const item = document.createElement('div');
+            item.className = 'insight-item';
+            item.style.animation = 'scaleIn 0.5s ease-out forwards';
+            
+            // We'll use the i-th retention data point if this looks like a main key point, 
+            // otherwise a generic "evolutionary context"
+            const backContent = (this.state.analysisResult.retention_data && this.state.analysisResult.retention_data[i]) 
+                                || `Sequential Context: This insight emerged during the ${event.status} phase.`;
+
+            item.innerHTML = `
+                <div class="insight-card-inner">
+                    <div class="insight-front">
+                        <span><i class="fas fa-history" style="margin-right:8px; color:var(--accent-color)"></i> ${event.insight}</span>
+                        <a href="https://www.google.com/search?q=${encodeURIComponent(event.insight)}" target="_blank" class="fact-check-btn">
+                            <i class="fas fa-search"></i> Verify
+                        </a>
+                    </div>
+                    <div class="insight-back">
+                        <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
+                    </div>
+                </div>
+            `;
+            nodesEl.prepend(item); // Show newest at top during replay
+
+            // Highlight Graph if possible (simple heuristic: match label)
+            this.graphRenderer.highlightNodeByLabel(event.insight.split(' ')[0]);
+
+            await new Promise(r => setTimeout(r, 1200));
+        }
+
+        statusEl.innerText = "Replay Complete";
+        btn.disabled = false;
+    }
+
+    seekTimeline(value) {
+        if (!this.state.analysisResult || !this.state.analysisResult.timeline) return;
+        const index = Math.floor((value / 100) * (this.state.analysisResult.timeline.length - 1));
+        const event = this.state.analysisResult.timeline[index];
+        document.getElementById('replayStatus').innerText = `Jumped to: ${event.status}`;
+        document.getElementById('replayTime').innerText = event.timestamp;
+    }
+
     renderResults() {
         const summaryEl = document.getElementById('resultSummary');
         const nodesEl = document.getElementById('resultKeyNodes');
@@ -179,9 +245,11 @@ class UIManager {
             nodesEl.innerHTML = '';
             
             const retentionPoints = this.state.analysisResult.retention_data || [];
+            console.log("Rendering results with retention data:", retentionPoints.length);
 
             this.state.analysisResult.keyNodes.forEach((nodeText, index) => {
-                const backContent = retentionPoints[index] || "Dive deep into this concept for better retention.";
+                // BUG FIX: Ensure we use the actual retention data from the backend
+                const backContent = retentionPoints[index] || "Strategic context: This point represents a core synthesis node. Examine how it connects to the broader discussion.";
                 
                 const item = document.createElement('div');
                 item.className = 'insight-item';

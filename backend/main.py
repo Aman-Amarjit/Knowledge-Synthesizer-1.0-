@@ -236,12 +236,37 @@ def synthesize(
         nodes.append({"id": i, "type": "argument", "label": concept.title()})
         edges.append({"source": 1, "target": i})
 
+    # NEW: Generate timeline data for 'Decision Replay'
+    timeline = []
+    chunk_size = max(1, len(sentences) // 10)
+    for i in range(min(10, len(sentences) // chunk_size + 1)):
+        start_idx = i * chunk_size
+        end_idx = (i + 1) * chunk_size
+        chunk = sentences[start_idx:end_idx]
+        if not chunk: continue
+        
+        # Determine sentiment of this chunk
+        chunk_blob = TextBlob(" ".join([str(s) for s in chunk]))
+        polarity = chunk_blob.sentiment.polarity
+        status = "Agreement Rising" if polarity > 0.1 else "Debate Ongoing" if polarity < -0.1 else "Neutral Exploration"
+        
+        timeline.append({
+            "timestamp": f"{i:02d}:{(i*6)%60:02d}",
+            "insight": str(chunk[0]),
+            "status": status,
+            "sentiment": "positive" if polarity > 0.1 else "negative" if polarity < -0.1 else "neutral"
+        })
+
     # NEW: Generate retention data for each key point (ELI5 style)
     retention_data = []
     for point in key_points:
         # Simplify the point for the "Back" of the card
         simple = retention.generate_eli5(point)
-        retention_data.append(simple if len(simple) > 10 else f"Think about how {point[:20]}... applies here.")
+        # Robust fallback: if simple is same as point or too short, use a themed prompt
+        if not simple or len(simple) < 20 or simple.strip() == point.strip():
+            retention_data.append(f"Strategic context: This point emphasizes the core logic of {point[:30]}... Examine how it connects to the broader synthesis.")
+        else:
+            retention_data.append(simple)
 
     return {
         "analysis": {
@@ -249,6 +274,7 @@ def synthesize(
             "keyNodes": key_points if key_points else [raw_content[:100] + "..."],
             "tags": tags,
             "retention_data": retention_data,
+            "timeline": timeline,
             "retention": {
                 "flashcards": flashcards,
                 "quiz": quiz,

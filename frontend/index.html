@@ -1555,7 +1555,7 @@
             padding: 0.8rem;
             border-radius: 0 8px 8px 0;
             font-style: italic;
-            border-left: 3px solid #ffcc00;
+            border-right: 3px solid #ffcc00;
         }
 
         /* Study Mode Toggle Switch */
@@ -1635,6 +1635,72 @@
         .fact-check-btn:hover {
             opacity: 1;
             color: var(--accent-color);
+        }
+
+        /* Decision Replay UI */
+        .replay-card {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            gap: 25px;
+            background: linear-gradient(90deg, rgba(17, 34, 64, 0.9), rgba(10, 25, 47, 0.9));
+            padding: 1.2rem 2.5rem;
+            border-radius: 15px;
+            border: 1px solid rgba(0, 123, 255, 0.2);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .replay-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
+            animation: flow 5s infinite;
+        }
+
+        @keyframes flow { 100% { left: 100%; } }
+
+        .timeline-box {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #timelineSlider {
+            width: 100%;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
+
+        .replay-btn {
+            background: var(--accent-color);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
+        }
+
+        .replay-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(0, 123, 255, 0.6);
+        }
+
+        .status-marker {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            display: flex;
+            justify-content: space-between;
         }
         /* Brief Styling */
         .brief-content {
@@ -2045,6 +2111,19 @@
             </div>
 
             <div class="results-dashboard">
+                
+                <div class="replay-card">
+                    <button class="replay-btn" id="replayBtn" onclick="uiManager.startReplay()">
+                        <i class="fas fa-history"></i> Decision Replay Mode
+                    </button>
+                    <div class="timeline-box">
+                        <div class="status-marker">
+                            <span id="replayStatus">Playback Ready</span>
+                            <span id="replayTime">00:00</span>
+                        </div>
+                        <input type="range" id="timelineSlider" value="0" min="0" max="100" oninput="uiManager.seekTimeline(this.value)">
+                    </div>
+                </div>
 
                 <!-- 3.1 KEY POINTS -->
                 <div class="result-card area-keypoints">

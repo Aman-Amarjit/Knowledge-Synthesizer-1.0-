@@ -146,6 +146,19 @@ class GraphRenderer {
         this.animationId = requestAnimationFrame(() => this.animate(graphData));
     }
 
+    highlightNodeByLabel(label) {
+        if (!label || !this.graphData.nodes) return;
+        const node = this.graphData.nodes.find(n => 
+            n.label.toLowerCase().includes(label.toLowerCase()) || 
+            label.toLowerCase().includes(n.label.toLowerCase())
+        );
+        if (node) {
+            const originalR = node.r;
+            node.r = originalR * 1.6;
+            setTimeout(() => { node.r = originalR; }, 1000);
+        }
+    }
+
     setTheme(isDark) {
         this.isDark = isDark;
     }

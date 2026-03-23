@@ -126,7 +126,8 @@ class UIManager {
                 body: JSON.stringify({
                     text: this.state.analysisResult.summary,
                     target_lang: lang,
-                    nodes: this.state.analysisResult.keyNodes
+                    nodes: this.state.analysisResult.keyNodes,
+                    retention_data: this.state.analysisResult.retention_data || []
                 })
             });
 
@@ -135,14 +136,14 @@ class UIManager {
             const data = await response.json();
             const translatedText = data.translatedText || this.state.analysisResult.summary || "";
             const translatedNodes = data.translatedNodes || [];
+            const translatedRetention = data.translatedRetention || this.state.analysisResult.retention_data || [];
 
             // Update UI with translated content
             summaryEl.innerHTML = `<p>${translatedText.toString().replace(/\n/g, '<br>')}</p>`;
 
             nodesEl.innerHTML = '';
             translatedNodes.forEach((text, index) => {
-                const retentionPoints = this.state.analysisResult.retention_data || [];
-                const backContent = retentionPoints[index] || "Strategic context: Core synthesis node.";
+                const backContent = translatedRetention[index] || "Strategic context: Core synthesis node.";
 
                 const item = document.createElement('div');
                 item.className = 'insight-item';
@@ -150,10 +151,9 @@ class UIManager {
                     <div class="insight-card-inner">
                         <div class="insight-front">
                             <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${text}</span>
-                            <a href="https://www.google.com/search?q=${encodeURIComponent(text)}" 
-                               target="_blank" class="fact-check-btn">
-                               <i class="fas fa-search"></i>
-                            </a>
+                            <button onclick="uiManager.verifyInsight('${text.replace(/'/g, "\\'")}', this)" class="fact-check-btn" title="Fact Check">
+                               <i class="fas fa-search"></i> Verify
+                            </button>
                         </div>
                         <div class="insight-back">
                             <i class="fas fa-lightbulb"></i> ${backContent}
@@ -207,9 +207,9 @@ class UIManager {
                 <div class="insight-card-inner">
                     <div class="insight-front">
                         <span><i class="fas fa-history" style="margin-right:8px; color:var(--accent-color)"></i> ${event.insight}</span>
-                        <a href="https://www.google.com/search?q=${encodeURIComponent(event.insight)}" target="_blank" class="fact-check-btn">
+                        <button onclick="uiManager.verifyInsight('${event.insight.replace(/'/g, "\\'")}', this)" class="fact-check-btn">
                             <i class="fas fa-search"></i> Verify
-                        </a>
+                        </button>
                     </div>
                     <div class="insight-back">
                         <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
@@ -263,10 +263,9 @@ class UIManager {
                     <div class="insight-card-inner">
                         <div class="insight-front">
                             <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${nodeText}</span>
-                            <a href="https://www.google.com/search?q=${encodeURIComponent(nodeText)}" 
-                               target="_blank" class="fact-check-btn" title="Fact Check">
+                            <button onclick="uiManager.verifyInsight('${nodeText.replace(/'/g, "\\'")}', this)" class="fact-check-btn" title="Fact Check">
                                <i class="fas fa-search"></i> Verify
-                            </a>
+                            </button>
                         </div>
                         <div class="insight-back">
                             <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
@@ -275,6 +274,51 @@ class UIManager {
                 `;
                 nodesEl.appendChild(item);
             });
+        }
+    }
+
+    async verifyInsight(text, btn) {
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch(`${APP_CONFIG.baseUrl}/verify`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            
+            // Place evidence OUTSIDE the 3D flip container to avoid mirroring
+            // Try insight-item first, then fall back to the closest flex card ancestor
+            const insightItem = btn.closest('.insight-item') || btn.closest('.insight-front') || btn.parentElement;
+            let evidenceDiv = insightItem ? insightItem.querySelector('.evidence-box') : null;
+            if (!evidenceDiv && insightItem) {
+                evidenceDiv = document.createElement('div');
+                evidenceDiv.className = 'evidence-box';
+                evidenceDiv.style.cssText = 'width: 100%; margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.15); border-left: 3px solid #00f2ff; border-radius: 4px; font-size: 0.85rem; word-wrap: break-word; clear: both;';
+                // Append AFTER the card inner so it is outside the 3D transform
+                const cardInner = btn.closest('.insight-card-inner');
+                if (cardInner && cardInner.parentElement) {
+                    cardInner.parentElement.appendChild(evidenceDiv);
+                } else {
+                    insightItem.appendChild(evidenceDiv);
+                }
+            }
+            
+            if (data.verified) {
+                if (evidenceDiv) evidenceDiv.innerHTML = `<span style="color:#00ff9d">✅ Wikipedia Fact: <strong>${data.topic || 'Article'}</strong></span><br/>${data.evidence} <a href="${data.source}" target="_blank" style="color:#00f2ff; text-decoration:underline;">[Source]</a>`;
+                btn.innerHTML = '<i class="fas fa-check-circle" style="color: #00ff9d;"></i> Verified';
+            } else {
+                const failReason = data.evidence || data.detail || "Server unreachable. Please try again.";
+                if (evidenceDiv) evidenceDiv.innerHTML = `<span style="color:#ff0055">❌ Unverified:</span> ${failReason}`;
+                btn.innerHTML = '<i class="fas fa-times-circle" style="color: #ff0055;"></i> Failed';
+                btn.disabled = false;
+            }
+        } catch (e) {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
         }
     }
 }

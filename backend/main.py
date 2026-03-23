@@ -18,6 +18,7 @@ from pydub import AudioSegment
 from pydub.silence import split_on_silence
 from pydub.effects import normalize
 import uvicorn
+import httpx
 
 # --- IMPORTING YOUR MODULES ---
 from src.tagging import SmartTagger
@@ -43,6 +44,14 @@ def setup_ffmpeg():
     return False
 
 FFMPEG_READY = setup_ffmpeg()
+
+# --- NLTK ENSURE CORPORA (fix for verify endpoint) ---
+import nltk
+for _corpus in ['punkt', 'averaged_perceptron_tagger', 'averaged_perceptron_tagger_eng', 'brown', 'wordnet']:
+    try:
+        nltk.download(_corpus, quiet=True)
+    except Exception:
+        pass
 
 # ==========================================
 # MODULE: AUDIO INTELLIGENCE (Transcriber)
@@ -90,6 +99,10 @@ class TranslationRequest(BaseModel):
     text: str
     target_lang: str
     nodes: Optional[List[str]] = []
+    retention_data: Optional[List[str]] = []
+
+class VerifyRequest(BaseModel):
+    text: str
 
 # ==========================================
 # API SERVER & CORE LOGIC
@@ -142,7 +155,7 @@ async def translate(request: TranslationRequest):
     try:
         # Avoid crashes on empty input
         if not request.text or request.text.strip() == "":
-             return {"translatedText": "", "translatedNodes": []}
+             return {"translatedText": "", "translatedNodes": [], "translatedRetention": []}
 
         translator = GoogleTranslator(source='auto', target=request.target_lang)
         
@@ -160,15 +173,75 @@ async def translate(request: TranslationRequest):
                     translated_nodes.append(translator.translate(node) or node)
                 except:
                     translated_nodes.append(node)
+                    
+        # Translate retention data if provided
+        translated_retention = []
+        if request.retention_data:
+            for ret in request.retention_data:
+                try:
+                    translated_retention.append(translator.translate(ret) or ret)
+                except:
+                    translated_retention.append(ret)
         
         return {
             "translatedText": translated_text,
-            "translatedNodes": translated_nodes
+            "translatedNodes": translated_nodes,
+            "translatedRetention": translated_retention
         }
     except Exception as e:
         print(f"Translation logic error: {str(e)}")
         # Partial success: Return original text instead of error
-        return {"translatedText": request.text, "translatedNodes": request.nodes or []}
+        return {
+            "translatedText": request.text, 
+            "translatedNodes": request.nodes or [],
+            "translatedRetention": getattr(request, "retention_data", []) or []
+        }
+
+@app.post("/verify")
+async def verify_insight(request: VerifyRequest):
+    try:
+        blob = TextBlob(request.text)
+        
+        # 1. Extract proper nouns or significant nouns
+        nouns = [word for word, pos in blob.tags if pos.startswith('NN')]
+        
+        # 2. Fallback: try any meaningful words if no nouns found
+        if not nouns:
+            stopwords = {'is', 'it', 'the', 'a', 'an', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does', 'did', 'this', 'that', 'and', 'or', 'but', 'of', 'in', 'to', 'for'}
+            nouns = [word for word in blob.words if len(word) > 3 and word.lower() not in stopwords]
+
+        if not nouns:
+            return {"verified": False, "evidence": "No verifiable subject found. Try a specific topic or claim.", "topic": "Unknown"}
+            
+        # Prioritize capitalized/proper words, then longest
+        nouns.sort(key=lambda w: (w.istitle(), len(w)), reverse=True)
+        query = nouns[0]
+        
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={query}&limit=1&format=json"
+            search_resp = await client.get(search_url)
+            
+            raw = search_resp.text.strip()
+            if not raw or not raw.startswith('['):
+                return {"verified": False, "evidence": f"Wikipedia returned no result for '{query}'.", "topic": query}
+            
+            search_data = search_resp.json()
+            
+            if len(search_data) > 2 and search_data[2] and search_data[2][0]:
+                title = search_data[1][0]
+                summary = search_data[2][0]
+                link = search_data[3][0]
+                if summary:
+                    return {
+                        "verified": True, 
+                        "source": link, 
+                        "evidence": f"According to Wikipedia: {summary}", 
+                        "topic": title
+                    }
+                    
+        return {"verified": False, "evidence": f"No Wikipedia article found for '{query}'. Try a more specific claim.", "topic": query}
+    except Exception as e:
+        return {"verified": False, "evidence": f"Verification failed: {str(e)}", "topic": "Error"}
 
 @app.post("/synthesize")
 def synthesize(
@@ -202,6 +275,20 @@ def synthesize(
     if not raw_content or raw_content.strip() == "":
         raise HTTPException(status_code=400, detail="No intelligible content detected.")
 
+    # --- SPEAKER DIARIZATION: Parse labeled transcript ---
+    speaker_pattern = re.compile(r'^(Speaker\s+\d+)\s*:\s*', re.MULTILINE)
+    is_debated_transcript = bool(speaker_pattern.search(raw_content))
+    speaker_turns = []
+    if is_debated_transcript:
+        for match in speaker_pattern.finditer(raw_content):
+            start = match.end()
+            next_match = speaker_pattern.search(raw_content, start)
+            end = next_match.start() if next_match else len(raw_content)
+            speaker_label = match.group(1)
+            content = raw_content[start:end].strip()
+            if content:
+                speaker_turns.append({"speaker": speaker_label, "text": content})
+
     # 2. Run Tagging & Retention Engines
     tags = tagger.generate_tags(raw_content)
     flashcards = retention.generate_flashcards(raw_content)
@@ -212,6 +299,15 @@ def synthesize(
     blob = TextBlob(raw_content)
     sentences = list(blob.sentences)
     
+    # NEW: Handle unpunctuated transcripts (e.g. from live voice)
+    if len(sentences) == 1 and len(raw_content.split()) > 15:
+        words = raw_content.split()
+        chunk_size = 12
+        sentences = [" ".join(words[i:i + chunk_size]) for i in range(0, len(words), chunk_size)]
+    
+    # Ensure sentences are list of strings for downstream logic
+    sentences = [str(s) for s in sentences]
+
     # NEW: Enhanced Extraction Algorithm
     # 3.1 Extract top keywords for scoring
     keywords = [np.lower() for np in blob.noun_phrases if len(np) > 3]
@@ -231,14 +327,16 @@ def synthesize(
         
         # Score each sentence in segment
         scored_segment = []
-        for s in segment:
-            s_str = str(s)
+        for s_str in segment:
             if len(s_str) < 30: continue # Skip trivial sentences
             
             # Scoring factors
             k_count = sum(1 for kw in top_keywords if kw in s_str.lower())
-            subj = s.sentiment.subjectivity
-            pol = abs(s.sentiment.polarity)
+            
+            # Re-evaluate sentiment since we converted to string earlier
+            s_blob = TextBlob(s_str)
+            subj = s_blob.sentiment.subjectivity
+            pol = abs(s_blob.sentiment.polarity)
             
             score = (k_count * 3.0) + (subj * 5.0) + (pol * 2.0)
             scored_segment.append((s_str, score))
@@ -352,6 +450,7 @@ def synthesize(
             "tags": tags,
             "retention_data": retention_data,
             "timeline": timeline,
+            "speaker_turns": speaker_turns,  # Populated if live debate recorded
             "retention": {
                 "flashcards": flashcards,
                 "quiz": quiz,

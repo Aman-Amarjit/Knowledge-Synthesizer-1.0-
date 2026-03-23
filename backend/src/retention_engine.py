@@ -40,23 +40,24 @@ class RetentionEngine:
         return cards
 
     def generate_eli5(self, text: str) -> str:
-        """Converts complex text into simpler language using basic linguistic rules."""
-        blob = TextBlob(text)
-        simple_sentences = []
-        
-        for sent in blob.sentences:
-            words = sent.words
-            # Simpler heuristic: If sentence is long, extract the core S-V-O if possible
-            # For now, we'll just take the first half and prepend a simplifying prefix
-            if len(words) > 15:
-                # Instead of truncating mid-sentence, we'll keep the full sentence 
-                # but ensure we only take the most significant ones.
-                simple_sentences.append(f"In simple terms: {sent}")
-            else:
-                simple_sentences.append(str(sent))
+        """Converts complex text into simpler language using basic linguistic rules by removing complex modifiers."""
+        try:
+            blob = TextBlob(text)
+            simple_sentences = []
+            
+            for sent in blob.sentences:
+                # Keep core sentence structure: remove adjectives (JJ) and adverbs (RB)
+                simplified_words = [w for w, pos in sent.tags if not pos.startswith('JJ') and not pos.startswith('RB')]
+                simplified_text = " ".join(simplified_words)
                 
-        # Return up to 2 meaningful simplified sentences
-        return " ".join(simple_sentences[:2]).strip()
+                if len(simplified_words) > 4 and len(simplified_words) < len(sent.words):
+                    simple_sentences.append(f"Core concept: {simplified_text}.")
+                else:
+                    simple_sentences.append(str(sent))
+                    
+            return " ".join(simple_sentences[:2]).strip()
+        except:
+            return f"Strategic context: {text[:50]}..."
 
     def create_active_recall_quiz(self, text: str) -> List[Dict[str, Any]]:
         """Generates short questions based on key insights."""

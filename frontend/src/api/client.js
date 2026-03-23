@@ -28,6 +28,12 @@ class APIClient {
                 } else {
                     throw new Error("No text provided.");
                 }
+            } else if (this.state.inputType === 'live' || this.state.inputType === 'voice') {
+                if (this.state.selectedFile) {
+                    formData.append('file', this.state.selectedFile);
+                } else {
+                    throw new Error("No audio or file provided.");
+                }
             }
 
             // Simulate Steps

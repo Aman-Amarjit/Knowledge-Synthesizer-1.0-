@@ -45,15 +45,18 @@ class SmartTagger:
         
         # Extract and format noun phrases (e.g., "machine learning" -> "#MachineLearning")
         for np in blob.noun_phrases:
-            if len(np) > 3 and len(np) < 25: # Filter out noise
+            if 3 < len(np) < 30: # Filter out noise
+                # Remove non-alphanumeric chars to prevent broken hashtags
+                clean_np = re.sub(r'[^a-zA-Z0-9\s]', '', np)
+                if not clean_np.strip(): continue
                 # Remove spaces and TitleCase
-                formatted = "".join(w.title() for w in np.split())
+                formatted = "".join(w.title() for w in clean_np.split())
                 phrases.append(formatted)
         
         # Add top 5 most frequent concepts
         if phrases:
             # exclude generic words if they slip through
-            stop_hashes = {'Speaker', 'Today', 'Hello', 'Think', 'Know', 'Something', 'Discussion'}
+            stop_hashes = {'Speaker', 'Today', 'Hello', 'Think', 'Know', 'Something', 'Discussion', 'Please', 'Thank', 'Thanks', 'Everyone', 'Anybody', 'Somebody'}
             clean_phrases = [p for p in phrases if p not in stop_hashes and len(p) > 2]
             
             top_concepts = [item[0] for item in Counter(clean_phrases).most_common(5)]

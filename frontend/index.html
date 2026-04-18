@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -9,27 +9,51 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- ADDED: Google Fonts for 'Human' look and Tech look -->
     <link
-        href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=JetBrains+Mono:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <style>
+        /* ====================================================
+         * SCROLL-DRIVEN TYPOGRAPHIC SCRAMBLE
+         * Animates a custom number property tied to scroll
+         * position, used to compute per-letter transforms.
+         * ==================================================== */
+        @property --rotate {
+            syntax: "<number>";
+            inherits: true;
+            initial-value: 0;
+        }
+
+        /* The scroll-driven keyframe that moves --rotate from 0 → 1 */
+        @keyframes --scroll-rotate {
+            from {
+                --rotate: 0;
+            }
+
+            to {
+                --rotate: 1;
+            }
+        }
+
         /* --- CSS VARIABLES & THEMES --- */
         :root {
+            scroll-behavior: smooth;
             --t-fast: 300ms;
             --t-medium: 600ms;
             --ease: cubic-bezier(0.25, 0.8, 0.25, 1);
             --bird: #1a1a1a;
 
             /* === THEME 1: INTELLECTUAL TECH (Light Mode) === */
-            --bg-primary: #ffffff;
-            --bg-secondary: #f0f4f8;
-            --bg-secondary-rgb: 240, 244, 248;
-            --text-primary: #1a202c;
-            --text-secondary: #4a5568;
-            --accent-color: #0066cc;
-            --accent-hover: #004c99;
-            --border-color: #e2e8f0;
-            --transition: all 0.3s ease;
-            
+            --bg-primary: #f8fafc;
+            --bg-primary-rgb: 248, 250, 252;
+            --bg-secondary: #e2e8f0;
+            --bg-secondary-rgb: 226, 232, 240;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --accent-color: #2563eb;
+            --accent-hover: #1d4ed8;
+            --border-color: rgba(15, 23, 42, 0.1);
+            --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
             /* Node Colors for Light Mode */
             --node-concept: #d97706;
             --node-argument: #059669;
@@ -37,43 +61,53 @@
             --node-unresolved: #718096;
         }
 
-        /* DEFAULT THEME IS NOW DARK (DEEPTECH) via JS initialization, but styled here */
-        [data-theme="dark"] {
+        /* DEFAULT THEME IS DARK — variables live on html element */
+        html[data-theme="dark"] {
             /* === THEME 2: NEURAL NETWORK (Deeptech Mode) === */
             --bird: #FFFFFF;
-            --bg-primary: #000000;
-            --bg-secondary: #0a1628;
-            --text-primary: #ffffff;
+            --bg-primary: #020617;
+            --bg-primary-rgb: 2, 6, 23;
+            --bg-secondary: #0f172a;
+            --bg-secondary-rgb: 15, 23, 42;
+            --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
             --accent-color: #00f2ff;
-            --accent-hover: #00ff1e;
-            --border-color: #1a2a40;
-            --card-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            --accent-color-rgb: 0, 242, 255;
+            --accent-hover: #00e0ff;
+            --border-color: rgba(255, 255, 255, 0.05);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 
-            --node-concept: #ffee00;
-            --node-argument: #00ff9d;
-            --node-counter: #ff0055;
-            --node-unresolved: #a0a0a0;
+            --node-concept: #fbbf24;
+            --node-argument: #34d399;
+            --node-counter: #fb7185;
+            --node-unresolved: #94a3b8;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
-        /* ADDED: Apply Caveat font to all headings for a human touch */
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+        }
+
         h1,
         h2,
         h3,
         h4,
         h5,
         h6,
-        .card-title {
-            font-family: 'Caveat', cursive;
-            letter-spacing: 1px;
+        .card-title,
+        .result-card h3 {
+            font-family: 'Space Grotesk', sans-serif;
+            letter-spacing: -0.5px;
+            font-weight: 700;
         }
 
         body {
@@ -84,6 +118,12 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+        }
+
+        body.is-loading {
+            overflow: hidden !important;
+            height: 100vh !important;
+            touch-action: none;
         }
 
         /* --- BACKGROUND VIDEO STYLES (UPDATED FOR DUAL VIDEOS) --- */
@@ -102,29 +142,28 @@
             /* Smooth cross-fade */
         }
 
-        /* Light Mode Video Logic */
+        /* Since we START in dark mode, dark video is visible and light is hidden by default */
         #bg-video-light {
-            opacity: 1;
-            /* Visible by default in light mode */
+            opacity: 0;
+            /* Hidden by default — shown in light mode */
             display: block;
         }
 
-        /* Dark Mode Video Logic */
         #bg-video-dark {
-            opacity: 0.5;
-            /* Hidden by default in light mode */
+            opacity: 1;
+            /* Visible by default — this is the dark mode video */
             display: block;
         }
 
         /* --- THEME SWITCHING FOR VIDEOS --- */
-        [data-theme="dark"] #bg-video-light {
-            opacity: 0;
-            /* Hide light video in dark mode */
+        html:not([data-theme="dark"]) #bg-video-light {
+            opacity: 1;
+            /* Show light video when NOT in dark mode */
         }
 
-        [data-theme="dark"] #bg-video-dark {
-            opacity: 1;
-            /* Show dark video in dark mode */
+        html:not([data-theme="dark"]) #bg-video-dark {
+            opacity: 0;
+            /* Hide dark video when in light mode */
         }
 
         /* --- VIDEO OVERLAY --- */
@@ -144,15 +183,18 @@
         }
 
         /* DARK MODE OVERLAY */
-        [data-theme="dark"] .video-overlay {
+        html[data-theme="dark"] .video-overlay {
             background: rgba(0, 0, 0, 0.7);
-            /* Dark overlay for dark video */
             backdrop-filter: blur(2px);
         }
 
-        /* --- DEEPTECH BACKGROUND GRID --- */
-        /* Only show grid animation in Dark Mode */
-        [data-theme="dark"] body::before {
+        /* LIGHT MODE OVERLAY */
+        html:not([data-theme="dark"]) .video-overlay {
+            background: rgba(255, 255, 255, 0.75);
+        }
+
+        /* --- DEEPTECH BACKGROUND GRID --- Only in Dark Mode ---*/
+        html[data-theme="dark"] body::before {
             content: "";
             position: fixed;
             top: 0;
@@ -163,10 +205,22 @@
                 linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
             background-size: 40px 40px;
-            transform: perspective(500px) rotateX(60deg) translateY(-100px) translateZ(-200px);
+            transform: perspective(500px) rotateX(60deg) translateY(calc(-100px + var(--scroll-y, 0px))) translateZ(-200px);
             pointer-events: none;
             z-index: -1;
-            animation: gridMove 20s linear infinite;
+            animation: gridMove 20s linear infinite, gridPerspective linear both;
+            animation-timeline: auto, scroll(root block);
+            animation-range: auto, 0% 100%;
+        }
+
+        @keyframes gridPerspective {
+            from {
+                transform: perspective(500px) rotateX(60deg) translateY(0) translateZ(-200px);
+            }
+
+            to {
+                transform: perspective(500px) rotateX(75deg) translateY(80px) translateZ(-100px);
+            }
         }
 
         @keyframes gridMove {
@@ -337,44 +391,46 @@
 
         /* --- REPLACED HEADER WITH ABSOLUTE POSITIONED BUTTON STYLES --- */
         .floating-theme-toggle {
-            position: absolute;
-            /* UPDATED: Changed from fixed to absolute so it doesn't float on scroll */
-            top: 25px;
-            right: 25px;
-            z-index: 100;
-            width: 50px;
-            height: 50px;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             outline: none;
+            overflow: hidden;
+            -webkit-appearance: none;
+            appearance: none;
+            color: var(--text-primary);
+            font-size: 1.4rem;
+            z-index: 10000;
+            /* Ensure always on top and clickable */
+            pointer-events: all;
+            /* Always clickable */
         }
 
         .floating-theme-toggle:hover {
-            transform: rotate(15deg) scale(1.1);
+            transform: scale(1.1) rotate(15deg);
             background: var(--bg-secondary);
             border-color: var(--accent-color);
-            box-shadow: 0 0 15px var(--accent-color);
+            box-shadow: 0 0 20px rgba(var(--accent-color-rgb, 0, 242, 255), 0.4);
+            color: var(--accent-color);
         }
 
-        [data-theme="dark"] .floating-theme-toggle {
-            background: rgba(0, 0, 0, 0.3);
-            border: 1px solid rgb(0, 234, 255);
-        }
-
-        .floating-theme-toggle img {
-            width: 24px;
-            height: 24px;
-            object-fit: contain;
-            pointer-events: none;
+        /* Dark mode glow effect on toggle — pointer-events MUST remain active */
+        html[data-theme="dark"] .floating-theme-toggle {
+            border-color: rgba(0, 242, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.15);
         }
 
         .hero-gradient-text {
@@ -385,9 +441,17 @@
         }
 
         @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         /* --- PREMIUM ORIGAMI BIRD TRANSITIONS --- */
@@ -463,20 +527,28 @@
         }
 
         @keyframes wingFlap {
-            from { transform: rotateY(0deg); }
-            to { transform: rotateY(60deg); }
+            from {
+                transform: rotateY(0deg);
+            }
+
+            to {
+                transform: rotateY(60deg);
+            }
         }
 
         @keyframes birdFlyAcross {
             0% {
                 transform: translateX(-100vw) translateY(20vh) rotate(-20deg) scale(0.5);
             }
+
             40% {
                 transform: translateX(0vw) translateY(0vh) rotate(0deg) scale(1.2);
             }
+
             60% {
                 transform: translateX(0vw) translateY(0vh) rotate(0deg) scale(1.2);
             }
+
             100% {
                 transform: translateX(100vw) translateY(-20vh) rotate(20deg) scale(0.8);
             }
@@ -545,24 +617,29 @@
         .elevator-pitch {
             text-align: center;
             margin-bottom: 4rem;
-            padding: 2rem;
-            background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(0, 123, 255, 0.01) 100%);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
+            padding: 2.5rem 2rem;
+            background: rgba(var(--bg-secondary-rgb), 0.35);
+            backdrop-filter: blur(10px) saturate(140%);
+            -webkit-backdrop-filter: blur(10px) saturate(140%);
+            border-radius: 24px;
+            border: 1px solid rgba(var(--accent-color-rgb), 0.15);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2), inset 0 0 20px rgba(255, 255, 255, 0.05);
         }
 
         .pitch-text {
             font-size: 1.5rem;
-            font-weight: 700;
+            font-weight: 500;
             margin-bottom: 1.5rem;
             color: var(--text-primary);
-            line-height: 1.4;
+            line-height: 1.5;
+            letter-spacing: -0.2px;
         }
 
         .pitch-highlight {
             color: var(--accent-color);
+            font-weight: 600;
         }
 
         /* Dynamic Visual Demo */
@@ -573,10 +650,11 @@
             margin: 2rem auto;
             position: relative;
             border-radius: 20px;
-            background: rgba(var(--bg-primary-rgb), 0.1);
-            backdrop-filter: blur(5px);
-            border: 1px solid var(--border-color);
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.05);
+            background: rgba(var(--bg-primary-rgb), 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.2);
             overflow: hidden;
         }
 
@@ -628,23 +706,67 @@
         }
 
         @keyframes move-smooth-1 {
-            0%, 100% { top: 35%; left: 40%; transform: translate(0, 0) rotate(0deg); }
-            50% { top: 38%; left: 42%; transform: translate(2px, 2px) rotate(1deg); }
+
+            0%,
+            100% {
+                top: 35%;
+                left: 40%;
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            50% {
+                top: 38%;
+                left: 42%;
+                transform: translate(2px, 2px) rotate(1deg);
+            }
         }
 
         @keyframes move-smooth-2 {
-            0%, 100% { top: 60%; left: 15%; transform: translate(0, 0) rotate(-1deg); }
-            50% { top: 63%; left: 18%; transform: translate(-2px, 3px) rotate(0deg); }
+
+            0%,
+            100% {
+                top: 60%;
+                left: 15%;
+                transform: translate(0, 0) rotate(-1deg);
+            }
+
+            50% {
+                top: 63%;
+                left: 18%;
+                transform: translate(-2px, 3px) rotate(0deg);
+            }
         }
 
         @keyframes move-smooth-3 {
-            0%, 100% { top: 60%; left: 70%; transform: translate(0, 0) rotate(1deg); }
-            50% { top: 63%; left: 67%; transform: translate(3px, -2px) rotate(0deg); }
+
+            0%,
+            100% {
+                top: 60%;
+                left: 70%;
+                transform: translate(0, 0) rotate(1deg);
+            }
+
+            50% {
+                top: 63%;
+                left: 67%;
+                transform: translate(3px, -2px) rotate(0deg);
+            }
         }
 
         @keyframes move-smooth-4 {
-            0%, 100% { top: 10%; left: 75%; transform: translate(0, 0) rotate(5deg); }
-            50% { top: 12%; left: 73%; transform: translate(-3px, 2px) rotate(3deg); }
+
+            0%,
+            100% {
+                top: 10%;
+                left: 75%;
+                transform: translate(0, 0) rotate(5deg);
+            }
+
+            50% {
+                top: 12%;
+                left: 73%;
+                transform: translate(-3px, 2px) rotate(3deg);
+            }
         }
 
         .demo-lines-svg {
@@ -676,29 +798,35 @@
         }
 
         @keyframes lineFlow {
-            to { stroke-dashoffset: -100; }
+            to {
+                stroke-dashoffset: -100;
+            }
         }
 
         @keyframes energyPulse {
-            to { stroke-dashoffset: 0; }
+            to {
+                stroke-dashoffset: 0;
+            }
         }
 
         .btn-primary {
-            background-color: var(--accent-color);
+            background: linear-gradient(135deg, var(--accent-color) 0%, var(--accent-hover) 100%);
             color: #fff;
-            padding: 1rem 2.5rem;
+            padding: 1rem 2.8rem;
             border: none;
             border-radius: 50px;
             font-size: 1.1rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
-            transition: transform 0.2s;
+            box-shadow: 0 4px 20px rgba(var(--accent-color-rgb, 0, 242, 255), 0.3);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            letter-spacing: 0.5px;
         }
 
         .btn-primary:hover {
-            transform: scale(1.05);
-            background-color: var(--accent-hover);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(var(--accent-color-rgb, 0, 242, 255), 0.5);
+            filter: brightness(1.1);
         }
 
         /* ADDED: Secondary Button Style */
@@ -706,26 +834,33 @@
             background-color: transparent;
             color: var(--text-primary);
             padding: 1rem 2.5rem;
-            border: 2px solid var(--border-color);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
             border-radius: 50px;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .btn-secondary:hover {
             border-color: var(--accent-color);
             color: var(--accent-color);
             transform: translateY(-2px);
-            background-color: rgba(127, 127, 127, 0.05);
+            background-color: rgba(var(--bg-secondary-rgb), 0.5);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
         }
 
         .z-section {
             display: flex;
             align-items: center;
-            gap: 4rem;
-            margin-bottom: 6rem;
+            justify-content: space-between;
+            gap: 5rem;
+            margin-bottom: 8rem;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+            padding: 0 2rem;
         }
 
         .z-section:nth-child(even) {
@@ -742,6 +877,27 @@
             color: var(--text-primary);
         }
 
+        .z-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-width: 300px;
+        }
+
+        .section-visual {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 24px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.5s ease;
+        }
+
+        .z-section:hover .section-visual {
+            transform: scale(1.02) translateY(-5px);
+        }
+
         /* --- RESULT PAGE --- */
         .result-view-container {
             display: grid;
@@ -752,180 +908,705 @@
         }
 
         @keyframes fadeInScale {
-            from { opacity: 0; transform: scale(0.95) translateY(20px); }
-            to { opacity: 1; transform: scale(1) translateY(0); }
+            from {
+                opacity: 0;
+                transform: scale(0.95) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
         }
 
         .result-card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 1.5rem;
+            background: rgba(var(--bg-secondary-rgb), 0.3);
+            backdrop-filter: blur(15px) saturate(120%);
+            -webkit-backdrop-filter: blur(15px) saturate(120%);
+            border: 1px solid rgba(var(--accent-color-rgb), 0.1);
+            border-radius: 24px;
+            padding: 1.8rem;
             margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-            transition: transform 0.3s ease;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             position: relative;
+            overflow: hidden;
+        }
+
+        .result-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            opacity: 0.5;
         }
 
         .result-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.1);
         }
 
         .result-card h3 {
             display: flex;
             align-items: center;
             gap: 12px;
-            font-size: 1.1rem;
-            color: var(--accent-color);
+            font-size: 1.15rem;
+            color: var(--text-primary);
             margin-bottom: 1.5rem;
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
         }
 
         .result-card h3 .badge {
-            background: var(--accent-color);
-            color: var(--bg-primary);
-            width: 28px;
-            height: 28px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+            color: #000;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 8px;
-            font-size: 0.8rem;
-            box-shadow: 0 0 15px var(--accent-color);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            box-shadow: 0 0 20px rgba(var(--accent-color-rgb, 0, 242, 255), 0.4);
         }
 
         /* --- Key Insights List --- */
         .insight-list {
-            max-height: 450px;
+            max-height: 65vh;
             overflow-y: auto;
             padding-right: 15px;
         }
 
-        /* Modern Scrollbar */
-        .insight-list::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .insight-list::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-        }
-
-        .insight-list::-webkit-scrollbar-thumb {
-            background: var(--accent-color);
-            border-radius: 10px;
-            box-shadow: 0 0 10px var(--accent-color);
-        }
-
-        .insight-item {
+        /* --- SCROLL REVEAL UTILITIES --- */
+        .reveal {
             position: relative;
-            padding: 1rem 1rem 1rem 1.8rem;
-            margin-bottom: 1rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-left: 3px solid var(--accent-color);
-            border-radius: 0 12px 12px 0;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            color: var(--text-primary);
-            transition: all 0.3s ease;
+            opacity: 0;
+            transition: all 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            filter: blur(10px);
         }
 
-        .insight-item:hover {
-            background: rgba(255, 255, 255, 0.06);
-            padding-left: 2rem;
+        .reveal.reveal-visible {
+            opacity: 1;
+            filter: blur(0);
         }
 
-        .insight-item i {
-            position: absolute;
-            left: 0.6rem;
-            top: 1.2rem;
-            font-size: 0.7rem;
-            color: var(--accent-color);
-            opacity: 0.6;
+        .fade-up {
+            transform: translateY(50px);
         }
 
-        /* --- Brief Summary --- */
-        .brief-content {
-            font-size: 1.05rem;
-            line-height: 1.8;
-            color: var(--text-secondary);
-            font-style: italic;
+        .fade-up.reveal-visible {
+            transform: translateY(0);
+        }
+
+        .fade-left {
+            transform: translateX(-50px);
+        }
+
+        .fade-left.reveal-visible {
+            transform: translateX(0);
+        }
+
+        .fade-right {
+            transform: translateX(50px);
+        }
+
+        .fade-right.reveal-visible {
+            transform: translateX(0);
+        }
+
+        /* ===== CSS SCROLL-DRIVEN ANIMATIONS (animation-timeline: view()) ===== */
+        /* Uses the modern CSS Scroll-Driven Animations API — zero JS, 60fps native */
+        @supports (animation-timeline: view()) {
+            .reveal {
+                opacity: 0;
+                filter: blur(8px);
+                animation: revealEnter linear both;
+                animation-timeline: view();
+                animation-range: entry 0% entry 25%;
+            }
+
+            .fade-up {
+                transform: translateY(60px);
+                animation: revealFadeUp linear both;
+                animation-timeline: view();
+                animation-range: entry 0% entry 30%;
+            }
+
+            .fade-left {
+                transform: translateX(-60px);
+                animation: revealFadeLeft linear both;
+                animation-timeline: view();
+                animation-range: entry 0% entry 30%;
+            }
+
+            .fade-right {
+                transform: translateX(60px);
+                animation: revealFadeRight linear both;
+                animation-timeline: view();
+                animation-range: entry 0% entry 30%;
+            }
+
+            @keyframes revealEnter {
+                from {
+                    opacity: 0;
+                    filter: blur(12px);
+                }
+
+                to {
+                    opacity: 1;
+                    filter: blur(0);
+                }
+            }
+
+            @keyframes revealFadeUp {
+                from {
+                    opacity: 0;
+                    filter: blur(8px);
+                    transform: translateY(60px);
+                }
+
+                to {
+                    opacity: 1;
+                    filter: blur(0);
+                    transform: translateY(0);
+                }
+            }
+
+            @keyframes revealFadeLeft {
+                from {
+                    opacity: 0;
+                    filter: blur(8px);
+                    transform: translateX(-60px);
+                }
+
+                to {
+                    opacity: 1;
+                    filter: blur(0);
+                    transform: translateX(0);
+                }
+            }
+
+            @keyframes revealFadeRight {
+                from {
+                    opacity: 0;
+                    filter: blur(8px);
+                    transform: translateX(60px);
+                }
+
+                to {
+                    opacity: 1;
+                    filter: blur(0);
+                    transform: translateX(0);
+                }
+            }
+
+            /* When native CSS animations handle it, disable the JS fallback class */
+            .reveal.reveal-visible {
+                /* Already animated by CSS timeline, keep at final state */
+                opacity: 1;
+                filter: blur(0);
+            }
+
+            .fade-up.reveal-visible {
+                transform: translateY(0);
+            }
+
+            .fade-left.reveal-visible {
+                transform: translateX(0);
+            }
+
+            .fade-right.reveal-visible {
+                transform: translateX(0);
+            }
+        }
+
+        /* ===== SCROLL GRADIENT TEXT HIGHLIGHT (Stroke reveal on scroll) ===== */
+        .scroll-text-highlight {
+            background: linear-gradient(to right,
+                    var(--accent-color) 0%,
+                    var(--accent-hover) 50%,
+                    var(--text-secondary) 50%);
+            background-size: 200%;
+            background-position: 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: textReveal linear forwards;
+            animation-timeline: view();
+            animation-range: entry 10% cover 40%;
+        }
+
+        @keyframes textReveal {
+            to {
+                background-position: 0%;
+            }
+        }
+
+        /* ===== STEP CARD: Scale on scroll ===== */
+        .step-card {
+            animation: stepPop linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 45%;
+        }
+
+        @keyframes stepPop {
+            from {
+                opacity: 0;
+                transform: scale(0.8) translateY(40px) rotateX(-10deg);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0) rotateX(0);
+            }
+        }
+
+        /* ===== SECTION HEADER: Slide text on scroll ===== */
+        .section-header h2 {
+            animation: headerSlide linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 40%;
+            transform-origin: left;
+        }
+
+        @keyframes headerSlide {
+            from {
+                opacity: 0;
+                letter-spacing: 0.3em;
+                transform: translateX(-20px) skewX(-10deg);
+                filter: blur(10px);
+            }
+
+            to {
+                opacity: 1;
+                letter-spacing: normal;
+                transform: translateX(0) skewX(0);
+                filter: blur(0);
+            }
+        }
+
+        /* Staggered Delay Utilities */
+        .delay-1 {
+            transition-delay: 0.1s;
+            animation-delay: 0.1s;
+        }
+
+        .delay-2 {
+            transition-delay: 0.2s;
+            animation-delay: 0.2s;
+        }
+
+        .delay-3 {
+            transition-delay: 0.3s;
+            animation-delay: 0.3s;
+        }
+
+        .delay-4 {
+            transition-delay: 0.4s;
+            animation-delay: 0.4s;
+        }
+
+
+        /* ===== HERO PINNING & SCRAMBLE STYLES ===== */
+        .hero-pin-container {
+            height: 300vh;
+            /* Scroll for 2 full viewports while pinned */
             position: relative;
-            padding: 1rem;
-            border-radius: 12px;
-            background: rgba(0, 0, 0, 0.1);
+            width: 100%;
         }
 
-        .brief-content::before {
-            content: '“';
-            position: absolute;
-            top: -10px;
-            left: 10px;
-            font-size: 3rem;
-            color: var(--accent-color);
-            opacity: 0.2;
-        }
-
-        /* --- Graph Card --- */
-        #graph-card {
-            height: 600px;
+        .hero-sticky-content {
+            position: sticky;
+            top: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-
-        #graph-container {
-            flex: 1;
-            position: relative;
-            margin-top: 1rem;
-            border-radius: 15px;
-            background: rgba(0, 0, 0, 0.2);
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .z-text p {
-            font-size: 1.1rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-
-        .z-image {
-            flex: 1;
-            height: 300px;
-            background-color: var(--bg-secondary);
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            display: flex;
             align-items: center;
             justify-content: center;
+            overflow: hidden;
+        }
+
+        .scramble-container {
             position: relative;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            margin: 6rem auto;
+            display: flex;
+            flex-direction: row;
+            /* Single horizontal line */
+            justify-content: center;
+            align-items: center;
+            gap: 0.8em;
+            /* Gap between words */
+            min-height: 200px;
         }
 
-        .z-image:hover {
-            transform: translateY(-8px) scale(1.02);
-            box-shadow: 0 20px 40px -5px rgba(0, 123, 255, 0.25);
-            border-color: var(--accent-color);
+        .scramble-word {
+            display: flex;
+            gap: 0.05em;
+            white-space: nowrap;
         }
 
-        [data-theme="dark"] .z-image:hover {
-            box-shadow: 0 20px 40px -5px rgba(0, 229, 255, 0.25);
+        .scramble-letter {
+            display: inline-block;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 800;
+            font-size: clamp(2.5rem, 6vw, 7.5rem);
+            text-transform: uppercase;
+            color: var(--text-primary);
+            letter-spacing: -0.02em;
+            will-change: transform, opacity, filter;
+
+            animation: unscramble-logic linear both;
+            animation-timeline: scroll(root block);
+            animation-range: 0 200vh;
         }
 
-        .z-image::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: 0.6s;
-            pointer-events: none;
-            z-index: 2;
+        @keyframes unscramble-logic {
+            from {
+                transform: translate(var(--sx), var(--sy)) rotate(var(--rz)) scale(0.5);
+                opacity: 0;
+                filter: blur(15px) brightness(2);
+            }
+
+            40% {
+                opacity: 1;
+                filter: blur(6px) brightness(1.5);
+            }
+
+            85% {
+                /* Subtle 'glitch' snap */
+                transform: translate(0, 0) rotate(0) scale(1.05);
+                filter: blur(0px) brightness(1.2);
+            }
+
+            to {
+                transform: translate(0, 0) rotate(0) scale(1);
+                opacity: 1;
+                filter: blur(0) brightness(1);
+            }
+        }
+
+        .scramble-letter.accent {
+            color: var(--accent-color);
+            text-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4),
+                0 0 30px rgba(var(--accent-color-rgb), 0.2);
+        }
+
+        /* NEW: Scanning Reveal Subtitle */
+        .scramble-subtitle {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: var(--accent-color);
+            opacity: 0;
+            transform: translateY(10px);
+            margin-top: 1rem;
+
+            animation: subtitle-reveal linear both;
+            animation-timeline: scroll(root block);
+            animation-range: 150vh 200vh;
+        }
+
+        @keyframes subtitle-reveal {
+            to {
+                opacity: 0.6;
+                transform: translateY(0);
+            }
+        }
+
+        .mouse-svg {
+            display: none;
+            /* Removed as requested */
+        }
+
+        /* --- PROFESSIONAL REPORT STYLES --- */
+        .report-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(15, 23, 42, 0.4);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            padding: 0.5rem 1rem;
+            border-left: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .meta-item:first-child {
+            border-left: none;
+        }
+
+        .meta-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+        }
+
+        .meta-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--accent-color);
+            opacity: 0.7;
+            font-weight: 700;
+        }
+
+        .meta-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* --- End of Global Styles --- */
+
+        /* --- PRINT / PDF EXPORT OPTIMIZATION --- */
+        @media print {
+            @page {
+                margin: 1.5cm;
+                size: A4;
+            }
+
+            body {
+                background: white !important;
+                color: #000 !important;
+                font-family: 'Times New Roman', serif !important;
+                /* Most legible for print */
+                line-height: 1.5;
+                font-size: 12pt !important;
+            }
+
+            /* Hide everything but the report */
+            #initial-preloader,
+            .processing-overlay,
+            .floating-theme-toggle,
+            #origami-overlay,
+            #home-view,
+            #input-view,
+            .bg-video,
+            .video-overlay,
+            .back-btn,
+            .results-actions,
+            .fact-check-btn,
+            .timeline-box,
+            footer,
+            .mouse-svg,
+            .area-replay,
+            .hero,
+            .scramble-container,
+            .btn-primary,
+            .btn-secondary,
+            .how-to-section,
+            .elevator-pitch,
+            .z-section {
+                display: none !important;
+            }
+
+            #mainContainer,
+            #result-view {
+                display: block !important;
+                padding: 0 !important;
+                margin: 0 auto !important;
+                width: 95% !important;
+            }
+
+            .results-header {
+                display: block !important;
+                text-align: center;
+                border-bottom: 3px solid #000 !important;
+                padding-bottom: 0.8cm !important;
+                margin-bottom: 1cm !important;
+            }
+
+            .results-header h1 {
+                font-size: 32pt !important;
+                text-transform: uppercase !important;
+                font-weight: 900 !important;
+                margin: 0 !important;
+                color: #000 !important;
+            }
+
+            .results-header::before {
+                content: 'OFFICIAL INTELLIGENCE SYNTHESIS';
+                display: block;
+                font-size: 11pt;
+                font-weight: bold;
+                letter-spacing: 6px;
+                color: #000;
+                margin-bottom: 0.3cm;
+            }
+
+            .report-meta-grid {
+                display: grid !important;
+                grid-template-columns: repeat(2, 1fr) !important;
+                gap: 0.8cm !important;
+                border: 2px solid #000 !important;
+                padding: 0.5cm !important;
+                margin-bottom: 1cm !important;
+                background: #fff !important;
+            }
+
+            .meta-item {
+                border-bottom: 1pt solid #ccc;
+                padding: 8pt 0;
+            }
+
+            .meta-label {
+                color: #000 !important;
+                font-size: 10pt !important;
+                font-weight: 900 !important;
+                text-transform: uppercase;
+            }
+
+            .meta-value {
+                color: #000 !important;
+                font-size: 12pt !important;
+                font-weight: bold;
+            }
+
+            .results-dashboard {
+                display: block !important;
+            }
+
+            .result-card {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                margin-bottom: 1.5cm !important;
+                page-break-inside: avoid;
+                transform: none !important;
+                /* Fix mirroring */
+            }
+
+            .insight-card-inner {
+                transform: none !important;
+                /* Fix mirroring */
+                display: block !important;
+            }
+
+            .card-header {
+                border-bottom: 2pt solid #000 !important;
+                margin-bottom: 15pt !important;
+                padding-bottom: 5pt !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+
+            .section-badge {
+                border: 2pt solid #000 !important;
+                color: #000 !important;
+                background: none !important;
+                padding: 3pt 8pt !important;
+                font-weight: bold;
+                border-radius: 4px !important;
+                margin-right: 15pt !important;
+            }
+
+            .card-title {
+                font-size: 18pt !important;
+                font-weight: 900 !important;
+                text-transform: uppercase !important;
+                margin: 0 !important;
+            }
+
+            .insight-item {
+                background: none !important;
+                border: 1pt solid #eee !important;
+                margin-bottom: 15pt !important;
+                padding: 15pt !important;
+                border-left: none !important;
+                /* Removed vertical bar */
+                transform: none !important;
+            }
+
+            .insight-front {
+                background: none !important;
+                font-weight: 900 !important;
+                font-size: 12pt !important;
+                margin-bottom: 5pt;
+                transform: none !important;
+                /* Fix mirroring */
+            }
+
+            .insight-back {
+                display: block !important;
+                position: static !important;
+                /* Allow normal flow in print */
+                margin-top: 10pt !important;
+                font-size: 11pt !important;
+                color: #333 !important;
+                font-style: italic !important;
+                line-height: 1.4;
+                transform: none !important;
+                /* Fix mirroring */
+                border-top: 1pt dashed #eee !important;
+                padding-top: 5pt !important;
+            }
+
+            .brief-content {
+                background: #fff !important;
+                border: 1.5pt solid #000 !important;
+                padding: 20pt !important;
+                font-size: 12pt !important;
+                text-align: justify !important;
+                line-height: 1.6;
+            }
+
+            .area-graph {
+                display: block !important;
+                height: 550px !important;
+                border: 2pt solid #000 !important;
+                page-break-before: always;
+                margin-top: 1cm;
+                background: #fff !important;
+            }
+
+            .graph-wrapper canvas {
+                filter: invert(1) hue-rotate(180deg) brightness(1.2) !important;
+                /* Make white text black, keep colors similar */
+            }
+
+            .legend {
+                position: static !important;
+                margin-top: 10pt !important;
+                background: #fff !important;
+                border: 1pt solid #000 !important;
+                color: #000 !important;
+                display: flex !important;
+                gap: 15pt !important;
+                padding: 10pt !important;
+                box-shadow: none !important;
+            }
+
+            .legend div {
+                color: #000 !important;
+                font-weight: bold !important;
+                font-size: 10pt !important;
+            }
+
+            #result-view::after {
+                content: 'DOCUMENT AUTHENTICATED BY NEURAL ENGINE | CONFIDENTIAL REPORT';
+                display: block;
+                text-align: center;
+                font-size: 10pt;
+                font-weight: bold;
+                color: #000;
+                margin-top: 2cm;
+                border-top: 2pt solid #000;
+                padding-top: 15pt;
+            }
         }
 
         .z-image:hover::before {
@@ -1221,8 +1902,17 @@
         }
 
         @keyframes spatialScaleIn {
-            0% { transform: scale(1.06) rotateX(-5deg) translateY(-20px); opacity: 0; filter: blur(12px); }
-            100% { transform: scale(1) rotateX(0) translateY(0); opacity: 1; filter: blur(0); }
+            0% {
+                transform: scale(1.06) rotateX(-5deg) translateY(-20px);
+                opacity: 0;
+                filter: blur(12px);
+            }
+
+            100% {
+                transform: scale(1) rotateX(0) translateY(0);
+                opacity: 1;
+                filter: blur(0);
+            }
         }
 
         /* UPDATED: Very dark, transparent background for deeptech mode */
@@ -1421,15 +2111,18 @@
             background: linear-gradient(90deg, rgba(0, 123, 255, 0.05) 0%, transparent 100%);
             padding: 1.5rem;
             border-radius: 16px;
-            border-left: 5px solid var(--accent-color);
+            border-left: none;
+            /* Removed cyan bar */
         }
 
         .results-dashboard {
             display: grid;
             grid-template-columns: 400px 1fr;
-            grid-template-rows: auto 380px auto; /* Replay, KeyPoints/Graph, Brief */
+            grid-template-rows: auto 380px auto;
+            /* Replay, KeyPoints/Graph, Brief */
             gap: 1.5rem;
-            height: auto; /* Expand to content */
+            height: auto;
+            /* Expand to content */
             min-height: 800px;
         }
 
@@ -1498,7 +2191,8 @@
         }
 
         .area-brief {
-            grid-column: 1 / -1; /* Full Width */
+            grid-column: 1 / -1;
+            /* Full Width */
             grid-row: 3;
             min-height: 200px;
         }
@@ -1509,36 +2203,22 @@
             height: 380px;
         }
 
-        .brief-content {
-            color: var(--text-primary);
-            font-size: 1.1rem;
-            line-height: 1.8;
-            padding: 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 12px;
-            margin-top: 1rem;
-        }
+        /* Key Points Styling */
 
         /* Key Points Styling */
         .key-points-list {
             overflow-y: auto;
-            padding-right: 5px;
+            max-height: 420px;
+            /* Fixed height so scroll works inside card */
+            padding-right: 8px;
+            /* Custom scrollbar for this panel */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
         }
 
-        .cool-point {
-            background: rgba(0, 123, 255, 0.05);
-            border-left: 3px solid var(--node-argument);
-            padding: 0.8rem;
-            margin-bottom: 0.8rem;
-            border-radius: 0 8px 8px 0;
-            font-size: 0.9rem;
-            color: var(--text-primary);
-            transition: all 0.2s;
-        }
-
-        .cool-point:hover {
-            background: rgba(0, 123, 255, 0.08);
-            padding-left: 1.2rem;
+        /* Tell Lenis to ignore scroll inside this element */
+        .key-points-list[data-lenis-prevent] {
+            overscroll-behavior: contain;
         }
 
         .insight-item {
@@ -1546,6 +2226,8 @@
             perspective: 1000px;
             margin-bottom: 1.2rem;
             min-height: 80px;
+            border: none;
+            background: transparent;
         }
 
         .insight-card-inner {
@@ -1560,30 +2242,20 @@
             transform: rotateY(180deg);
         }
 
-        .insight-front, .insight-back {
+        .insight-front,
+        .insight-back {
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
             border-radius: 8px;
             padding: 1.2rem;
             min-height: 80px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            overflow-y: auto;
-            scrollbar-width: none; /* Hide standard scrollbar */
-        }
-
-        .insight-front::-webkit-scrollbar, .insight-back::-webkit-scrollbar {
-            display: none; /* Hide standard scrollbar */
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
         .insight-front {
             background: var(--bg-secondary);
-            border-left: 4px solid var(--accent-color);
-            position: relative;
             z-index: 2;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transform: translateZ(2px);
+            transform: rotateY(0deg);
         }
 
         .insight-back {
@@ -1594,26 +2266,39 @@
             height: 100%;
             background: var(--bg-primary);
             color: var(--accent-color);
-            transform: rotateY(180deg) translateZ(2px);
+            transform: rotateY(180deg);
             display: flex;
             align-items: center;
-            padding: 1.2rem;
-            border-right: 4px solid var(--accent-color);
+            justify-content: center;
+            text-align: center;
             font-style: italic;
             z-index: 1;
+        }
+
+        .cool-point {
+            background: rgba(0, 123, 255, 0.05);
+            border-left: none;
+            /* Removed cyan bar */
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-primary);
+            transition: all 0.2s;
         }
 
         /* Study Mode Toggle Switch */
         .study-toggle-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.8rem;
             margin-left: auto;
             background: rgba(255, 255, 255, 0.05);
-            padding: 5px 12px;
+            padding: 0.4rem 1rem;
             border-radius: 20px;
             font-size: 0.8rem;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-secondary);
             white-space: nowrap;
         }
 
@@ -1624,12 +2309,19 @@
             height: 20px;
         }
 
-        .switch input { opacity: 0; width: 0; height: 0; }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
 
         .slider {
             position: absolute;
             cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
             background-color: var(--border-color);
             transition: .4s;
             border-radius: 20px;
@@ -1638,15 +2330,22 @@
         .slider:before {
             position: absolute;
             content: "";
-            height: 14px; width: 14px;
-            left: 3px; bottom: 3px;
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
             background-color: white;
             transition: .4s;
             border-radius: 50%;
         }
 
-        input:checked + .slider { background-color: var(--accent-color); }
-        input:checked + .slider:before { transform: translateX(14px); }
+        input:checked+.slider {
+            background-color: var(--accent-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(14px);
+        }
 
         /* Translation & Fact Check UI */
         .results-actions {
@@ -1699,22 +2398,41 @@
             display: flex;
             align-items: center;
             gap: 25px;
-            background: var(--bg-secondary);
-            padding: 1.2rem 2.5rem;
-            border-radius: 15px;
-            border: 1px solid var(--border-color);
+            background: rgba(10, 25, 47, 0.8);
+            padding: 1.5rem 2.5rem;
+            border-radius: 20px;
+            border: 1px solid rgba(0, 242, 255, 0.2);
             margin-bottom: 2rem;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
             position: relative;
             overflow: hidden;
+            backdrop-filter: blur(15px);
+        }
+
+        .replay-btn {
+            background: var(--accent-color) !important;
+            color: #000 !important;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 20px rgba(var(--accent-color-rgb), 0.3);
+            flex-shrink: 0;
+        }
+
+        .replay-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(var(--accent-color-rgb), 0.5);
         }
 
         .replay-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 4px; height: 100%;
-            background: var(--accent-color);
-            box-shadow: 0 0 15px var(--accent-color);
+            display: none;
         }
 
         [data-theme="dark"] .replay-card {
@@ -1726,8 +2444,10 @@
         .replay-card::after {
             content: '';
             position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
             animation: flow 5s infinite;
         }
@@ -1759,12 +2479,29 @@
         }
 
         @keyframes elasticSlideIn {
-            0% { transform: translateX(-30px) scale(0.9); opacity: 0; filter: blur(5px); }
-            60% { transform: translateX(10px) scale(1.02); opacity: 1; filter: blur(0); }
-            100% { transform: translateX(0) scale(1); opacity: 1; }
+            0% {
+                transform: translateX(-30px) scale(0.9);
+                opacity: 0;
+                filter: blur(5px);
+            }
+
+            60% {
+                transform: translateX(10px) scale(1.02);
+                opacity: 1;
+                filter: blur(0);
+            }
+
+            100% {
+                transform: translateX(0) scale(1);
+                opacity: 1;
+            }
         }
 
-        @keyframes flow { 100% { left: 100%; } }
+        @keyframes flow {
+            100% {
+                left: 100%;
+            }
+        }
 
         .timeline-box {
             flex-grow: 1;
@@ -1779,40 +2516,7 @@
             cursor: pointer;
         }
 
-        .replay-btn {
-            background: var(--accent-color);
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 25px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            transition: all 0.3s;
-            box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
-        }
-
-        .replay-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 30px rgba(0, 123, 255, 0.6);
-        }
-
-        .status-marker {
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            display: flex;
-            justify-content: space-between;
-        }
-        /* Brief Styling (overrides the earlier duplicate) */
-        .brief-content {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.7;
-            overflow-y: auto;
-            text-align: justify;
-            padding: 0.5rem 0;
-        }
+        /* Graph Container Overrides */
 
         /* Graph Container Overrides */
         .graph-wrapper {
@@ -1840,11 +2544,26 @@
             }
         }
 
-        @media (max-width: 768px) {
-
+        @media (max-width: 1024px) {
             .z-section,
             .z-section:nth-child(even) {
                 flex-direction: column;
+                text-align: center;
+                gap: 2.5rem;
+                margin-bottom: 5rem;
+            }
+
+            .z-text {
+                order: 1;
+            }
+
+            .z-image {
+                order: 2;
+                width: 100%;
+            }
+
+            .section-visual {
+                max-width: 100%;
             }
 
             .canvas-container {
@@ -1854,11 +2573,11 @@
 
         /* === LIGHT MODE SPECIFIC OVERRIDES === */
         :root .insight-front {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         :root .insight-back {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         :root .result-card h3 {
@@ -1881,7 +2600,7 @@
 </head>
 <!-- UPDATED: Initial state is data-theme="dark" for deeptech look on load -->
 
-<body data-theme="dark">
+<body class="is-loading">
 
     <!-- ADDED: DARK MODE VIDEO (Visible when data-theme="dark") -->
     <video autoplay muted loop playsinline class="bg-video" id="bg-video-dark">
@@ -1924,9 +2643,7 @@
 
     <!-- REPLACED HEADER WITH FLOATING BUTTON -->
     <button class="floating-theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
-        <!-- Default is Light Mode Icon -->
-        <img id="themeBtnImg" src="assets/team_symbol_light.png" alt="Toggle Theme"
-            style="width: 24px; height: 24px; object-fit: contain;">
+        <i class="fas fa-moon" id="themeBtnIcon"></i>
     </button>
 
     <!-- ORIGAMI BIRD TRANSITION OVERLAY -->
@@ -1948,33 +2665,34 @@
 
         <!-- === HOME PAGE === -->
         <div id="home-view" class="page-view is-active">
-            <section class="hero">
+            <div class="hero-pin-container">
+                <section class="hero hero-sticky-content">
+                    <div class="scramble-container" id="scrambleContainer">
+                        <!-- Content generated by JS -->
+                    </div>
+                    <div class="scramble-subtitle">Scanning Intelligence · Synthesizing Insight</div>
 
-                <!-- UPDATED: Added hero-gradient-text class -->
-                <h1 class="hero-gradient-text">Turn Chaos into Structure</h1>
-                <p>An AI-powered knowledge synthesizer that converts unstructured discussions into clear, interactive
-                    learning maps.</p>
-                <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
-                    <button class="btn-primary" onclick="navigateTo('input-view')">Get Started</button>
-                    <!-- UPDATED: Button now scrolls to the new section -->
-                    <button class="btn-secondary"
-                        onclick="document.getElementById('how-to-use').scrollIntoView({behavior: 'smooth'})">How to
-                        use?</button>
-                </div>
+                    <p
+                        style="max-width: 550px; text-align: center; margin-bottom: 2.5rem; opacity: 0.8; font-size: 0.95rem;">
+                        Synthesize complex discussions into clear, interactive learning maps in real-time.
+                    </p>
 
-                <!-- ADDED: Hero Image Placeholder -->
-                <!-- Upload 'hero_banner.png' to see it appear here -->
-                <div class="hero-visual-wrapper">
-                    <img src="assets/hero_banner.png" style="width: 100%; display: block;"
-                        onload="this.parentElement.style.display='block'">
-                </div>
-            </section>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="btn-primary" onclick="navigateTo('input-view')">Get Started</button>
+                        <button class="btn-secondary"
+                            onclick="document.getElementById('how-to-use').scrollIntoView({behavior: 'smooth'})">How to
+                            use?</button>
+                    </div>
+                </section>
+            </div>
 
             <!-- NEW: ELEVATOR PITCH & DYNAMIC DEMO -->
-            <div class="elevator-pitch">
+            <div class="elevator-pitch reveal fade-up">
                 <div class="pitch-text">
-                    The problem: <span class="pitch-highlight">classroom debates vanish.</span><br>
-                    The solution: <span class="pitch-highlight">Knowledge Synthesizer captures and maps them.</span>
+                    The problem: <span class="pitch-highlight scroll-text-highlight">classroom debates
+                        vanish.</span><br>
+                    The solution: <span class="pitch-highlight scroll-text-highlight">Knowledge Synthesizer captures and
+                        maps them.</span>
                 </div>
 
                 <div class="demo-visualizer">
@@ -1982,7 +2700,7 @@
                         <!-- Symmetrical Curved Connections to Logic (Center) -->
                         <path class="demo-line-path" d="M110,160 Q150,120 250,110" /> <!-- Debate -> Logic -->
                         <path class="demo-line-path" d="M490,160 Q450,120 350,110" /> <!-- Fact -> Logic -->
-                        
+
                         <!-- Energy Pulses -->
                         <path class="pulse-path" d="M110,160 Q150,120 250,110" />
                         <path class="pulse-path" d="M490,160 Q450,120 350,110" />
@@ -2000,7 +2718,7 @@
             <!-- END NEW SECTION -->
 
             <!-- ADDED: HOW TO USE SECTION -->
-            <section id="how-to-use" class="how-to-section">
+            <section id="how-to-use" class="how-to-section reveal">
                 <div class="section-header">
                     <h2>How It Works</h2>
                     <p>Go from noise to knowledge in four simple steps.</p>
@@ -2012,7 +2730,7 @@
                         <div class="step-number">1</div>
                         <div class="step-icon-box">
                             <!-- OPTIONAL IMAGE: Upload 'step1.png' -->
-                            <img src="step1.png"
+                            <img src="assets/step1.png"
                                 style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"
                                 onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
                             <i class="fas fa-microphone-alt"></i>
@@ -2028,7 +2746,7 @@
                         <div class="step-number">2</div>
                         <div class="step-icon-box">
                             <!-- OPTIONAL IMAGE: Upload 'step2.png' -->
-                            <img src="step2.png"
+                            <img src="assets/step2.png"
                                 style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"
                                 onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
                             <i class="fas fa-sliders-h"></i>
@@ -2044,7 +2762,7 @@
                         <div class="step-number">3</div>
                         <div class="step-icon-box">
                             <!-- OPTIONAL IMAGE: Upload 'step3.png' -->
-                            <img src="step3.png"
+                            <img src="assets/step3.png"
                                 style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"
                                 onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
                             <i class="fas fa-cogs"></i>
@@ -2059,7 +2777,7 @@
                         <div class="step-number">4</div>
                         <div class="step-icon-box">
                             <!-- OPTIONAL IMAGE: Upload 'step4.png' -->
-                            <img src="step4.png"
+                            <img src="assets/step4.png"
                                 style="display:none; width:100%; height:100%; object-fit:cover; border-radius:50%;"
                                 onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
                             <i class="fas fa-project-diagram"></i>
@@ -2072,7 +2790,7 @@
             </section>
             <!-- END ADDED SECTION -->
 
-            <div class="z-section">
+            <div class="z-section reveal fade-left">
                 <div class="z-text">
                     <h2>The Problem: Lost Insights</h2>
                     <p>Classroom discussions are goldmines of insight, yet they often evaporate the moment the bell
@@ -2090,7 +2808,7 @@
                 </div>
             </div>
 
-            <div class="z-section">
+            <div class="z-section reveal fade-right">
                 <div class="z-text">
                     <h2>The Solution: AI Synthesis</h2>
                     <p>Our advanced AI doesn't just transcribe; it understands. It listens to the audio, filters out the
@@ -2107,7 +2825,7 @@
                 </div>
             </div>
 
-            <div class="z-section">
+            <div class="z-section reveal fade-up">
                 <div class="z-text">
                     <h2>The Benefit: Visual Knowledge</h2>
                     <p>Transform linear conversations into interactive visual landscapes. Students and educators can
@@ -2141,29 +2859,22 @@
                     <div class="options-grid">
                         <div class="option-card selected" onclick="selectOption(this, 'inputType', 'live')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_mic.png' -->
-                                <img src="icon_mic.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">🎤</span>
+                                <i class="fas fa-microphone-alt"
+                                    style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Live Audio
                         </div>
                         <div class="option-card" onclick="selectOption(this, 'inputType', 'text')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_text.png' -->
-                                <img src="icon_text.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">📝</span>
+                                <i class="fas fa-file-alt" style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Transcript
                         </div>
                         <!-- REMOVED: Upload Option -->
                         <div class="option-card" onclick="selectOption(this, 'inputType', 'voice')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_file.png' -->
-                                <img src="icon_file.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">🎧</span>
+                                <i class="fas fa-headphones-alt"
+                                    style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Voice File
                         </div>
@@ -2189,28 +2900,20 @@
                     <div class="options-grid">
                         <div class="option-card selected" onclick="selectOption(this, 'discType', 'roundtable')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_chat.png' -->
-                                <img src="icon_chat.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">💬</span>
+                                <i class="fas fa-comments" style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Round Table
                         </div>
                         <div class="option-card" onclick="selectOption(this, 'discType', 'survey')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_list.png' -->
-                                <img src="icon_list.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">📋</span>
+                                <i class="fas fa-list-ul" style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Survey
                         </div>
                         <div class="option-card" onclick="selectOption(this, 'discType', 'debate')">
                             <div class="option-icon-wrapper">
-                                <!-- OPTIONAL IMAGE: Upload 'icon_scale.png' -->
-                                <img src="icon_scale.png" style="display:none;"
-                                    onload="this.style.display='block'; this.nextElementSibling.style.display='none'">
-                                <span style="font-size: 2rem; display:block;">⚖️</span>
+                                <i class="fas fa-balance-scale"
+                                    style="font-size: 2.2rem; color: var(--accent-color);"></i>
                             </div>
                             Debate
                         </div>
@@ -2228,29 +2931,58 @@
 
             <div class="results-header">
                 <div>
-                    <h1 style="font-size: 2rem; margin-bottom: 0.2rem;">Synthesis Report</h1>
-                    <p style="color: var(--text-secondary); font-size: 0.9rem;">Session ID: #8X-2991 • Status: <span
-                            style="color: var(--node-argument);">● Completed</span></p>
+                    <h1 style="font-size: 2.8rem; font-weight: 800; letter-spacing: -1px; margin-bottom: 0.5rem;">
+                        Executive Intelligence Report</h1>
+                    <p style="color: var(--text-secondary); font-size: 1rem;">Session Protocol: <span id="protocolBadge"
+                            style="color: var(--accent-color); font-weight: 600;">Standard roundtable</span> · <span
+                            id="resultTimestamp">April 18, 2026</span></p>
                 </div>
-                <button class="btn-primary"
-                    style="padding: 0.6rem 1.5rem; font-size: 0.9rem; display: flex; align-items: center; gap: 8px;"
-                    onclick="navigateTo('home-view')">
-                    <i class="fas fa-plus"></i> New Session
-                </button>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="btn-primary"
+                        style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"
+                        onclick="window.print()">
+                        <i class="fas fa-file-pdf"></i> Export PDF
+                    </button>
+                    <button class="btn-primary" onclick="navigateTo('home-view')">
+                        <i class="fas fa-plus"></i> New Session
+                    </button>
+                </div>
+            </div>
+
+            <div class="report-meta-grid">
+                <div class="meta-item">
+                    <span class="meta-label">Total Synthesis</span>
+                    <span class="meta-value" id="metaTotalPoints">12 Insights</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Confidence Score</span>
+                    <span class="meta-value" style="color: #00ff9d;">94.2%</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Semantic Depth</span>
+                    <span class="meta-value">High Priority</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">AI Status</span>
+                    <span class="meta-value">● Verified</span>
+                </div>
             </div>
 
             <div class="results-dashboard">
-                
-                <div class="replay-card">
-                    <button class="replay-btn" id="replayBtn" onclick="uiManager.startReplay()">
-                        <i class="fas fa-history"></i> Decision Replay Mode
-                    </button>
-                    <div class="timeline-box">
-                        <div class="status-marker">
-                            <span id="replayStatus">Playback Ready</span>
-                            <span id="replayTime">00:00</span>
+
+                <div class="result-card area-replay">
+                    <div style="display: flex; align-items: center; gap: 2rem;">
+                        <button class="replay-btn" id="replayBtn" onclick="uiManager.startReplay()">
+                            <i class="fas fa-history"></i> Decision Replay Mode
+                        </button>
+                        <div class="timeline-box" style="flex: 1;">
+                            <div class="status-marker">
+                                <span id="replayStatus">Playback Ready</span>
+                                <span id="replayTime">00:00</span>
+                            </div>
+                            <input type="range" id="timelineSlider" value="0" min="0" max="100"
+                                oninput="uiManager.seekTimeline(this.value)">
                         </div>
-                        <input type="range" id="timelineSlider" value="0" min="0" max="100" oninput="uiManager.seekTimeline(this.value)">
                     </div>
                 </div>
 
@@ -2270,13 +3002,14 @@
                             <div class="study-toggle-container">
                                 <span>Study Mode</span>
                                 <label class="switch">
-                                    <input type="checkbox" id="studyModeToggle" onchange="uiManager.toggleStudyMode(this.checked)">
+                                    <input type="checkbox" id="studyModeToggle"
+                                        onchange="uiManager.toggleStudyMode(this.checked)">
                                     <span class="slider"></span>
                                 </label>
                             </div>
                         </div>
                     </div>
-                    <div id="resultKeyNodes" class="key-points-list">
+                    <div id="resultKeyNodes" class="key-points-list" data-lenis-prevent>
                         <!-- Dynamic Content -->
                     </div>
                 </div>
@@ -2306,7 +3039,8 @@
                         <canvas id="knowledgeGraph"></canvas>
                         <div class="legend">
                             <div><span class="dot" style="background: var(--node-concept)"></span> Core Nexus</div>
-                            <div><span class="dot" style="background: var(--node-argument)"></span> Supporting Vector</div>
+                            <div><span class="dot" style="background: var(--node-argument)"></span> Supporting Vector
+                            </div>
                             <div><span class="dot" style="background: var(--node-counter)"></span> Friction Point</div>
                         </div>
                     </div>
@@ -2319,6 +3053,9 @@
 
     <footer>
         <!-- CORE SIMULATION LOGIC (Traditional Scripts for Local File Support) -->
+        <!-- 3rd Party: Smooth Scroll (Lenis) -->
+        <script src="https://unpkg.com/lenis@1.1.20/dist/lenis.min.js"></script>
+
         <script src="src/config.js"></script>
         <script src="src/graph/renderer.js"></script>
         <script src="src/ui/interface.js"></script>
@@ -2326,6 +3063,36 @@
         <script src="src/api/client.js"></script>
         <script src="src/main.js"></script>
 
+
+        <!-- 3D Cloud-to-Linear Letter Splitter -->
+        <script>
+            (function () {
+                var container = document.getElementById('scrambleContainer');
+                if (!container) return;
+                var words = ["KNOWLEDGE", "SYNTHESIZER"];
+                container.innerHTML = '';
+
+                words.forEach(function (word, wi) {
+                    var wordDiv = document.createElement('div');
+                    wordDiv.className = 'scramble-word';
+
+                    word.split('').forEach(function (char) {
+                        var s = document.createElement('span');
+                        s.textContent = char;
+                        s.className = 'scramble-letter' + (wi === 0 ? ' accent' : '');
+
+                        // CLEANER 2D SCATTER
+                        s.style.setProperty('--sx', (Math.random() - 0.5) * 500 + 'px');
+                        s.style.setProperty('--sy', (Math.random() - 0.5) * 300 + 'px');
+                        s.style.setProperty('--rz', (Math.random() - 0.5) * 180 + 'deg');
+
+                        wordDiv.appendChild(s);
+                    });
+                    container.appendChild(wordDiv);
+                });
+            })();
+        </script>
+    </footer>
 </body>
 
 </html>

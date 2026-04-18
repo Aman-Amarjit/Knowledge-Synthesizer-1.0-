@@ -32,11 +32,11 @@ timeout /t 5 /nobreak >nul
 
 REM 5. Open Application
 echo [INFO] Opening the application in your browser...
-start http://localhost:8000
+start http://localhost:8005
 
 echo.
 echo ==================================================
 echo   🚀 Application is now running!
-echo   - App: http://localhost:8000
+echo   - App: http://localhost:8005
 echo ==================================================
 pause

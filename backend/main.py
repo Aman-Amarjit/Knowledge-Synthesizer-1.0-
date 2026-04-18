@@ -24,6 +24,7 @@ import httpx
 from src.tagging import SmartTagger
 from src.retention_engine import RetentionEngine
 from src.visual_notes import VisualNoteManager
+from src.fact_checker import FactCheckPipeline
 
 # --- FFMPEG AUTO-CONFIG ---
 def setup_ffmpeg():
@@ -60,6 +61,9 @@ class AudioEngine:
     """Handles speech-to-text conversion with noise reduction and silence trimming."""
     def __init__(self):
         self.recognizer = sr.Recognizer()
+        self.recognizer.dynamic_energy_threshold = True
+        self.recognizer.energy_threshold = 300
+        self.recognizer.pause_threshold = 0.8
 
     def transcribe(self, file_path: str) -> Tuple[str, Optional[str]]:
         """Returns (transcript, error_message)"""
@@ -124,6 +128,7 @@ tagger = SmartTagger()
 retention = RetentionEngine()
 visual_manager = VisualNoteManager(storage_dir="static_visuals")
 audio_engine = AudioEngine()
+fact_checker = FactCheckPipeline()
 
 # Static Files for Whiteboard Snapshots
 os.makedirs("static_visuals", exist_ok=True)
@@ -200,48 +205,12 @@ async def translate(request: TranslationRequest):
 @app.post("/verify")
 async def verify_insight(request: VerifyRequest):
     try:
-        blob = TextBlob(request.text)
-        
-        # 1. Extract proper nouns or significant nouns
-        nouns = [word for word, pos in blob.tags if pos.startswith('NN')]
-        
-        # 2. Fallback: try any meaningful words if no nouns found
-        if not nouns:
-            stopwords = {'is', 'it', 'the', 'a', 'an', 'are', 'was', 'were', 'be', 'been', 'being', 'do', 'does', 'did', 'this', 'that', 'and', 'or', 'but', 'of', 'in', 'to', 'for'}
-            nouns = [word for word in blob.words if len(word) > 3 and word.lower() not in stopwords]
-
-        if not nouns:
-            return {"verified": False, "evidence": "No verifiable subject found. Try a specific topic or claim.", "topic": "Unknown"}
-            
-        # Prioritize capitalized/proper words, then longest
-        nouns.sort(key=lambda w: (w.istitle(), len(w)), reverse=True)
-        query = nouns[0]
-        
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            search_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={query}&limit=1&format=json"
-            search_resp = await client.get(search_url)
-            
-            raw = search_resp.text.strip()
-            if not raw or not raw.startswith('['):
-                return {"verified": False, "evidence": f"Wikipedia returned no result for '{query}'.", "topic": query}
-            
-            search_data = search_resp.json()
-            
-            if len(search_data) > 2 and search_data[2] and search_data[2][0]:
-                title = search_data[1][0]
-                summary = search_data[2][0]
-                link = search_data[3][0]
-                if summary:
-                    return {
-                        "verified": True, 
-                        "source": link, 
-                        "evidence": f"According to Wikipedia: {summary}", 
-                        "topic": title
-                    }
-                    
-        return {"verified": False, "evidence": f"No Wikipedia article found for '{query}'. Try a more specific claim.", "topic": query}
+        results = await fact_checker.run(request.text)
+        return results
     except Exception as e:
-        return {"verified": False, "evidence": f"Verification failed: {str(e)}", "topic": "Error"}
+        import traceback
+        traceback.print_exc()
+        return {"verified": False, "evidence": f"Verification failed: {str(e)}", "topic": "Error", "gray_zone": True}
 
 @app.post("/synthesize")
 def synthesize(
@@ -249,6 +218,7 @@ def synthesize(
     text: Optional[str] = Form(None),
     inputType: Optional[str] = Form("text")
 ):
+    print(f"[INFO] Synthesis started. Input Type: {inputType}")
     # 1. Capture Raw Content
     raw_content = ""
     if inputType in ["live", "voice"] and file:
@@ -273,7 +243,10 @@ def synthesize(
         raw_content = text or ""
 
     if not raw_content or raw_content.strip() == "":
+        print("[ERROR] No content detected.")
         raise HTTPException(status_code=400, detail="No intelligible content detected.")
+
+    print(f"[INFO] Content captured ({len(raw_content)} chars). Running analysis...")
 
     # --- SPEAKER DIARIZATION: Parse labeled transcript ---
     speaker_pattern = re.compile(r'^(Speaker\s+\d+)\s*:\s*', re.MULTILINE)
@@ -290,12 +263,14 @@ def synthesize(
                 speaker_turns.append({"speaker": speaker_label, "text": content})
 
     # 2. Run Tagging & Retention Engines
+    print("[INFO] Running Tagging & Retention...")
     tags = tagger.generate_tags(raw_content)
     flashcards = retention.generate_flashcards(raw_content)
     quiz = retention.create_active_recall_quiz(raw_content)
     schedule = retention.get_spaced_repetition_schedule()
     
     # 3. Process Linguistic Structure (Summary & Key Points)
+    print("[INFO] Processing Linguistic Structure...")
     blob = TextBlob(raw_content)
     sentences = list(blob.sentences)
     
@@ -359,6 +334,7 @@ def synthesize(
         summary = raw_content[:200]
 
     # 4. Generate Sophisticated Graph (Co-occurrence Network)
+    print("[INFO] Building Knowledge Graph...")
     # 4.1 Extract meaningful concepts
     concept_counts = Counter(keywords)
     top_concepts = [w.lower() for w, _ in concept_counts.most_common(10)]
@@ -468,4 +444,4 @@ frontend_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "f
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8005)

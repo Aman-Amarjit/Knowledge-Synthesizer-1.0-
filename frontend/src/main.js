@@ -84,8 +84,8 @@ class KnowledgeSynthesizerApp {
 
                     let currentSpeaker = 1;
                     let silenceFrames = 0;
-                    const SILENCE_THRESHOLD = 10;  // RMS below this = silence
-                    const SILENCE_FRAMES_FOR_SWITCH = 25; // ~0.5s of silence triggers speaker switch
+                    const SILENCE_THRESHOLD = 15;  // Slightly more sensitive for clearer detection
+                    const SILENCE_FRAMES_FOR_SWITCH = 40; // ~0.8s of silence triggers speaker switch (more natural)
 
                     // Web Speech API for live transcription
                     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;

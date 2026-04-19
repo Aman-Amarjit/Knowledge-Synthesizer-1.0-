@@ -26,20 +26,39 @@ class UIManager {
     initScrollAnimations() {
         console.log("Initializing Premium Scroll Experience...");
 
+        const header = document.getElementById('mainHeader');
+
         // 1. Initialize Lenis (Smooth Momentum Scroll)
         if (window.Lenis) {
             this.lenis = new Lenis({
-                duration: 1.2,
+                duration: 0.8, // Snappier response
                 easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
                 smoothWheel: true
             });
             const raf = (time) => { this.lenis.raf(time); requestAnimationFrame(raf); };
             requestAnimationFrame(raf);
-            this.lenis.on('scroll', () => { this.updateProgressBar(); this.updateParallax(); });
+            this.lenis.on('scroll', (e) => { 
+                this.updateProgressBar(); 
+                this.updateParallax(); 
+                
+                // Handle header scroll state
+                if (header) {
+                    if (e.scroll > 50) header.classList.add('scrolled');
+                    else header.classList.remove('scrolled');
+                }
+            });
+        } else {
+            // Fallback: native scroll events (ONLY if Lenis fails)
+            window.addEventListener('scroll', () => { 
+                this.updateProgressBar(); 
+                this.updateParallax(); 
+                
+                if (header) {
+                    if (window.scrollY > 50) header.classList.add('scrolled');
+                    else header.classList.remove('scrolled');
+                }
+            }, { passive: true });
         }
-
-        // Fallback: native scroll events (covers cases where Lenis isn't available)
-        window.addEventListener('scroll', () => { this.updateProgressBar(); this.updateParallax(); }, { passive: true });
 
         // 2. Reveal on Scroll (Intersection Observer)
         const revealCallback = (entries, observer) => {
@@ -164,7 +183,14 @@ class UIManager {
 
     async translateResults(lang) {
         if (lang === 'en') {
-            this.renderResults(); // Re-render original
+            const summaryEl = document.getElementById('resultSummary');
+            const nodesEl = document.getElementById('resultKeyNodes');
+            summaryEl.innerHTML = '<p><i class="fas fa-sync fa-spin"></i> Restoring Original...</p>';
+            nodesEl.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:200px;"><i class="fas fa-sync fa-spin" style="font-size:2rem; color:var(--accent-color);"></i></div>';
+            
+            setTimeout(() => {
+                this.renderResults(); // Re-render original
+            }, 300);
             return;
         }
 
@@ -174,7 +200,20 @@ class UIManager {
         if (!this.state.analysisResult) return;
 
         try {
-            summaryEl.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> Translating...</p>';
+            console.log("Starting translation to:", lang);
+            summaryEl.innerHTML = '<div class="reveal-visible" style="color:var(--accent-color); font-weight:600;"><i class="fas fa-sync fa-spin"></i> TRANSLATING EXECUTIVE SUMMARY...</div>';
+            nodesEl.innerHTML = `
+                <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:300px; width:100%; text-align:center;">
+                    <div class="loader-ring-tech" style="position:relative; width:60px; height:60px; margin-bottom:20px;">
+                        <div class="ring-1"></div>
+                        <div class="ring-2"></div>
+                    </div>
+                    <p style="font-family:'JetBrains Mono', monospace; color:#00f2ff; letter-spacing:2px; font-size:0.9rem; text-transform:uppercase; animation:blinkText 1s infinite; margin:0; padding:10px; text-shadow: 0 0 10px rgba(0,242,255,0.5);">Translating...</p>
+                </div>
+            `;
+
+            // Give the UI a moment to paint the loader
+            await new Promise(r => setTimeout(r, 100));
 
             const response = await fetch(`${APP_CONFIG.baseUrl}/translate`, {
                 method: 'POST',
@@ -226,62 +265,93 @@ class UIManager {
     }
 
     async startReplay() {
-        if (!this.state.analysisResult || !this.state.analysisResult.timeline) return;
+        try {
+            console.log("Attempting to start Decision Replay...");
+            if (!this.state.analysisResult || !this.state.analysisResult.timeline) {
+                console.error("No timeline data found for replay.");
+                alert("No replay data available for this analysis.");
+                return;
+            }
 
-        const timeline = this.state.analysisResult.timeline;
-        const nodesEl = document.getElementById('resultKeyNodes');
-        const statusEl = document.getElementById('replayStatus');
-        const timeEl = document.getElementById('replayTime');
-        const slider = document.getElementById('timelineSlider');
-        const btn = document.getElementById('replayBtn');
+            const timeline = this.state.analysisResult.timeline;
+            console.log(`Starting replay with ${timeline.length} events.`);
+            
+            const nodesEl = document.getElementById('resultKeyNodes');
+            const statusEl = document.getElementById('replayStatus');
+            const timeEl = document.getElementById('replayTime');
+            const slider = document.getElementById('timelineSlider');
+            const btn = document.getElementById('replayBtn');
 
-        btn.disabled = true;
-        nodesEl.innerHTML = '';
-        slider.value = 0;
+            if (!btn || !nodesEl || !statusEl || !timeEl || !slider) {
+                console.error("Required UI elements for replay not found.");
+                return;
+            }
 
-        for (let i = 0; i < timeline.length; i++) {
-            const event = timeline[i];
-            const progress = ((i + 1) / timeline.length) * 100;
+            btn.disabled = true;
+            nodesEl.innerHTML = '';
+            slider.value = 0;
 
-            // Update UI
-            slider.value = progress;
-            slider.style.setProperty('--p', `${progress}%`);
-            statusEl.innerText = `Evolution Phase: ${event.status}`;
-            timeEl.innerText = event.timestamp;
+            for (let i = 0; i < timeline.length; i++) {
+                const event = timeline[i];
+                const progress = ((i + 1) / timeline.length) * 100;
 
-            // Add item to list
-            const item = document.createElement('div');
-            item.className = 'insight-item';
-            item.style.animation = 'elasticSlideIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
+                // Update UI
+                slider.value = progress;
+                slider.style.setProperty('--p', `${progress}%`);
+                statusEl.innerText = `Evolution Phase: ${event.status}`;
+                timeEl.innerText = event.timestamp;
 
-            // We'll use the i-th retention data point if this looks like a main key point, 
-            // otherwise a generic "evolutionary context"
-            const backContent = (this.state.analysisResult.retention_data && this.state.analysisResult.retention_data[i])
-                || `Sequential Context: This insight emerged during the ${event.status} phase.`;
+                // Add item to list
+                const item = document.createElement('div');
+                item.className = 'insight-item';
+                item.style.animation = 'elasticSlideIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards';
 
-            item.innerHTML = `
-                <div class="insight-card-inner">
-                    <div class="insight-front">
-                        <span><i class="fas fa-history" style="margin-right:8px; color:var(--accent-color)"></i> ${event.insight}</span>
-                        <button onclick="uiManager.verifyInsight('${event.insight.replace(/'/g, "\\'")}', this)" class="fact-check-btn">
-                            <i class="fas fa-search"></i> Verify
-                        </button>
+                const backContent = (this.state.analysisResult.retention_data && this.state.analysisResult.retention_data[i])
+                    || `Sequential Context: This insight emerged during the ${event.status} phase.`;
+
+                item.innerHTML = `
+                    <div class="insight-card-inner">
+                        <div class="insight-front">
+                            <span><i class="fas fa-history" style="margin-right:8px; color:var(--accent-color)"></i> ${event.insight}</span>
+                            <button class="fact-check-btn">
+                                <i class="fas fa-search"></i> Verify
+                            </button>
+                        </div>
+                        <div class="insight-back">
+                            <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
+                        </div>
                     </div>
-                    <div class="insight-back">
-                        <i class="fas fa-lightbulb" style="margin-right:8px;"></i> ${backContent}
-                    </div>
-                </div>
-            `;
-            nodesEl.prepend(item); // Show newest at top during replay
+                `;
+                
+                // Safe event attachment
+                const verifyBtn = item.querySelector('.fact-check-btn');
+                if (verifyBtn) {
+                    verifyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.verifyInsight(event.insight, verifyBtn);
+                    };
+                }
 
-            // Highlight Graph with pulsing effect
-            this.graphRenderer.highlightNodeByLabel(event.insight.split(' ')[0], true);
+                nodesEl.prepend(item); // Show newest at top during replay
 
-            await new Promise(r => setTimeout(r, 1200));
+                try {
+                    // Highlight Graph with pulsing effect
+                    this.graphRenderer.highlightNodeByLabel(event.insight, true);
+                } catch (err) {
+                    console.warn("Graph highlight failed during replay:", err);
+                }
+
+                await new Promise(r => setTimeout(r, 1200));
+            }
+
+            statusEl.innerText = "Replay Complete";
+            btn.disabled = false;
+        } catch (globalErr) {
+            console.error("Critical Replay Error:", globalErr);
+            alert("An error occurred during replay. See console for details.");
+            const btn = document.getElementById('replayBtn');
+            if (btn) btn.disabled = false;
         }
-
-        statusEl.innerText = "Replay Complete";
-        btn.disabled = false;
     }
 
     seekTimeline(value) {
@@ -324,7 +394,7 @@ class UIManager {
                     <div class="insight-card-inner">
                         <div class="insight-front">
                             <span><i class="fas fa-chevron-right" style="margin-right:8px;"></i> ${nodeText}</span>
-                            <button onclick="uiManager.verifyInsight('${nodeText.replace(/'/g, "\\'")}', this)" class="fact-check-btn" title="Fact Check">
+                            <button class="fact-check-btn" title="Fact Check">
                                <i class="fas fa-search"></i> Verify
                             </button>
                         </div>
@@ -333,6 +403,16 @@ class UIManager {
                         </div>
                     </div>
                 `;
+
+                // Safe event attachment
+                const verifyBtn = item.querySelector('.fact-check-btn');
+                if (verifyBtn) {
+                    verifyBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        this.verifyInsight(nodeText, verifyBtn);
+                    };
+                }
+
                 nodesEl.appendChild(item);
             });
         }

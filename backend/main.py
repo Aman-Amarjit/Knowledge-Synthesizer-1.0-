@@ -349,9 +349,23 @@ def synthesize(
         freq = concept_counts[concept]
         size = min(40, max(18, 18 + freq * 3))
         
-        # Color group based on hierarchy
+        # Color group based on hierarchy and sentiment
         n_type = "concept" if i == 1 else "argument"
-        if i > 5: n_type = "unresolved" # Use 'Unknown' color for less frequent
+        
+        # Detect friction points based on sentiment if available
+        # Find which sentences this concept appears in
+        sentiment_score = 0
+        appearances = 0
+        for s in sentences:
+            if concept.lower() in str(s).lower():
+                sentiment_score += TextBlob(str(s)).sentiment.polarity
+                appearances += 1
+        
+        avg_sentiment = sentiment_score / appearances if appearances > 0 else 0
+        if avg_sentiment < -0.1:
+            n_type = "counter" # Friction Point
+        elif i > 5:
+            n_type = "unresolved" # Secondary Insights
 
         nodes.append({
             "id": i, 

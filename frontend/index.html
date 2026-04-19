@@ -11,6 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
+    <link rel="icon" type="image/png" href="assets/favicon.png">
     <style>
         /* ====================================================
          * SCROLL-DRIVEN TYPOGRAPHIC SCRAMBLE
@@ -43,22 +44,23 @@
             --bird: #1a1a1a;
 
             /* === THEME 1: INTELLECTUAL TECH (Light Mode) === */
-            --bg-primary: #f8fafc;
-            --bg-primary-rgb: 248, 250, 252;
-            --bg-secondary: #e2e8f0;
-            --bg-secondary-rgb: 226, 232, 240;
-            --text-primary: #0f172a;
+            --bg-primary: #ffffff;
+            --bg-primary-rgb: 255, 255, 255;
+            --bg-secondary: #f8fafc;
+            --bg-secondary-rgb: 248, 250, 252;
+            --text-primary: #020617;
             --text-secondary: #475569;
             --accent-color: #2563eb;
+            --accent-color-rgb: 37, 99, 235;
             --accent-hover: #1d4ed8;
-            --border-color: rgba(15, 23, 42, 0.1);
+            --border-color: rgba(0, 0, 0, 0.06);
             --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 
             /* Node Colors for Light Mode */
-            --node-concept: #d97706;
+            --node-concept: #ea580c;
             --node-argument: #059669;
             --node-counter: #dc2626;
-            --node-unresolved: #718096;
+            --node-unresolved: #64748b;
         }
 
         /* DEFAULT THEME IS DARK — variables live on html element */
@@ -89,6 +91,17 @@
             padding: 0;
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        html {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
         }
 
         img {
@@ -556,6 +569,13 @@
 
         .page-view {
             display: none;
+            padding-top: 12rem; /* Increased to ensure zero collision with header/back-btn */
+            min-height: 100vh;
+            position: relative;
+        }
+
+        #home-view {
+            padding-top: 0;
         }
 
         .page-view.is-active {
@@ -577,22 +597,33 @@
 
         /* --- COMPONENTS --- */
         .back-btn {
-            background: none;
-            border: none;
-            font-size: 1rem;
+            position: absolute;
+            top: 7rem; /* Moved higher to clear content */
+            left: 4rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 700;
             color: var(--text-secondary);
             cursor: pointer;
-            margin-bottom: 1rem;
+            padding: 0.6rem 1.2rem;
+            border-radius: 50px;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0;
-            transition: color 0.2s;
+            gap: 10px;
+            z-index: 100;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
         .back-btn:hover {
-            color: var(--accent-color);
-            transform: translateX(-3px);
+            background: var(--accent-color);
+            color: #000;
+            border-color: var(--accent-color);
+            transform: translateX(-5px);
+            box-shadow: 0 0 25px rgba(var(--accent-color-rgb), 0.4);
         }
 
         .hero {
@@ -1254,39 +1285,74 @@
             display: inline-block;
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 800;
-            font-size: clamp(2.5rem, 6vw, 7.5rem);
+            font-size: var(--scramble-size, clamp(2.5rem, 6vw, 7.5rem));
             text-transform: uppercase;
             color: var(--text-primary);
             letter-spacing: -0.02em;
-            will-change: transform, opacity, filter;
+        }
 
+        /* Optimized Hero Scramble */
+        #scrambleContainer .scramble-letter {
+            will-change: transform, opacity;
             animation: unscramble-logic linear both;
             animation-timeline: scroll(root block);
-            animation-range: 0 200vh;
+            animation-range: 0 100vh;
+        }
+
+        /* Section Titles - Lightweight One-time Reveal */
+        .js-scramble {
+            --scramble-size: clamp(2rem, 3.5vw, 3rem);
+            margin-bottom: 1.5rem;
+            display: block;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+
+        .reveal-visible .js-scramble {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Remove per-letter animation for sections to fix lag */
+        .js-scramble .scramble-letter {
+            animation: none !important;
+            filter: none !important;
+        }
+
+
+        .js-scramble {
+            --scramble-size: clamp(1.8rem, 3.5vw, 2.8rem);
+            margin-bottom: 1.5rem;
+            display: block;
+            text-align: inherit; /* follow parent alignment */
+        }
+
+        .js-scramble .scramble-word {
+            display: inline-flex;
+            margin-right: 0.4em;
+        }
+
+
+        /* Header specific scramble - Keep visible at top, scramble on scroll */
+        header .scramble-letter {
+            --scramble-size: 1.1rem;
+            --scramble-timeline: scroll(root block);
+            --scramble-range: 0 100px;
+            font-weight: 700;
+            letter-spacing: 2px;
         }
 
         @keyframes unscramble-logic {
             from {
-                transform: translate(var(--sx), var(--sy)) rotate(var(--rz)) scale(0.5);
-                opacity: 0;
-                filter: blur(15px) brightness(2);
+                transform: translate(var(--sx), var(--sy)) rotate(var(--rz)) scale(0.8);
+                opacity: 0.6; /* Higher initial opacity to avoid "missing text" look */
+                filter: blur(4px);
             }
-
-            40% {
-                opacity: 1;
-                filter: blur(6px) brightness(1.5);
-            }
-
-            85% {
-                /* Subtle 'glitch' snap */
-                transform: translate(0, 0) rotate(0) scale(1.05);
-                filter: blur(0px) brightness(1.2);
-            }
-
             to {
                 transform: translate(0, 0) rotate(0) scale(1);
                 opacity: 1;
-                filter: blur(0) brightness(1);
+                filter: blur(0);
             }
         }
 
@@ -1368,6 +1434,119 @@
             font-size: 1.1rem;
             font-weight: 600;
             color: var(--text-primary);
+        }
+
+        /* --- Header Styles --- */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10005;
+            padding: 0.8rem 4rem; /* More compact height */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            background: rgba(var(--bg-primary-rgb), 0.2); /* More transparent */
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        header.scrolled {
+            background: rgba(var(--bg-primary-rgb), 0.85);
+            padding: 0.6rem 3rem;
+            border-bottom: 1px solid rgba(var(--accent-color-rgb), 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem; /* Sleeker logo text */
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .logo-link img {
+            width: 24px; /* More compact icon */
+            height: 24px;
+            filter: drop-shadow(0 0 8px var(--accent-color));
+            transition: transform 0.3s ease;
+        }
+
+        .logo-link:hover img {
+            transform: rotate(15deg) scale(1.1);
+        }
+
+        nav ul {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 0.75rem; /* More professional smallcaps */
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            transition: all 0.3s ease;
+            position: relative;
+            padding: 0.5rem 0;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 1px;
+            background: var(--accent-color);
+            transition: all 0.3s ease;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        nav a:hover {
+            color: var(--text-primary);
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        /* Ensure header is visible when not loading */
+        body:not(.is-loading) header {
+            opacity: 1 !important;
+            visibility: visible !important;
+            pointer-events: all;
+            display: flex !important;
+        }
+
+        body.is-loading header {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
         }
 
         /* --- End of Global Styles --- */
@@ -2107,50 +2286,97 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 2rem;
-            background: linear-gradient(90deg, rgba(0, 123, 255, 0.05) 0%, transparent 100%);
-            padding: 1.5rem;
+            margin-bottom: 2.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem 2rem;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .results-header h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+        }
+
+        .report-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .meta-item {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 1.2rem;
             border-radius: 16px;
-            border-left: none;
-            /* Removed cyan bar */
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .meta-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .meta-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .results-dashboard {
             display: grid;
-            grid-template-columns: 400px 1fr;
-            grid-template-rows: auto 380px auto;
-            /* Replay, KeyPoints/Graph, Brief */
-            gap: 1.5rem;
-            height: auto;
-            /* Expand to content */
-            min-height: 800px;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+            padding-bottom: 8rem;
         }
 
         .result-card {
-            background: var(--bg-primary);
-            border-radius: 16px;
-            border: 1px solid var(--border-color);
-            padding: 1.5rem;
+            background: rgba(var(--bg-primary-rgb), 0.6);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 1.8rem;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 45px rgba(0, 0, 0, 0.3);
         }
 
         .result-card:hover {
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-            border-color: var(--accent-color);
-            transform: translateY(-2px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border-color: rgba(var(--accent-color-rgb), 0.4);
+            transform: translateY(-5px);
         }
 
         .card-header {
             display: flex;
             align-items: center;
-            margin-bottom: 1.2rem;
-            padding-bottom: 0.8rem;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         [data-theme="dark"] .card-header {
@@ -2185,7 +2411,7 @@
         .area-keypoints {
             grid-column: 1;
             grid-row: 2;
-            height: 380px;
+            height: 600px;
             display: flex;
             flex-direction: column;
         }
@@ -2194,26 +2420,61 @@
             grid-column: 1 / -1;
             /* Full Width */
             grid-row: 3;
-            min-height: 200px;
+            min-height: 150px;
+            margin-top: 1rem;
         }
 
         .area-graph {
             grid-column: 2;
             grid-row: 2;
-            height: 380px;
+            height: 600px;
+            position: relative;
+        }
+
+        /* Legend removed - now drawn natively on canvas */
+
+        .replay-btn {
+            background: linear-gradient(135deg, var(--accent-color) 0%, #4f46e5 100%);
+            color: #fff;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 242, 255, 0.2);
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .replay-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 242, 255, 0.4);
+            filter: brightness(1.1);
+        }
+
+        .replay-btn:disabled {
+            background: #334155;
+            box-shadow: none;
+            cursor: not-allowed;
+            opacity: 0.7;
         }
 
         /* Key Points Styling */
 
         /* Key Points Styling */
         .key-points-list {
-            overflow-y: auto;
-            max-height: 420px;
-            /* Fixed height so scroll works inside card */
+            overflow-y: auto !important;
+            flex: 1;
             padding-right: 8px;
             /* Custom scrollbar for this panel */
             scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+            scrollbar-color: var(--accent-color) transparent;
+            pointer-events: auto !important;
         }
 
         /* Tell Lenis to ignore scroll inside this element */
@@ -2246,16 +2507,56 @@
         .insight-back {
             backface-visibility: hidden;
             -webkit-backface-visibility: hidden;
-            border-radius: 8px;
-            padding: 1.2rem;
-            min-height: 80px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 1.4rem;
+            min-height: 90px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
         }
 
         .insight-front {
-            background: var(--bg-secondary);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
             z-index: 2;
             transform: rotateY(0deg);
+            color: var(--text-primary);
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        /* --- TECH LOADER ANIMATIONS --- */
+        @keyframes blinkText {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.98); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .loader-ring-tech .ring-1 {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-color, #00f2ff);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loader-ring-tech .ring-2 {
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            top: 10%;
+            left: 10%;
+            border: 2px solid transparent;
+            border-bottom-color: #ff0055;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite reverse;
         }
 
         .insight-back {
@@ -2593,6 +2894,85 @@
             border-left-color: var(--accent-color);
         }
 
+        /* Restore Z-Section Layout */
+        .z-section {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center;
+            justify-content: center;
+            gap: 7rem; 
+            margin-bottom: 12rem;
+            padding: 0 5%; /* Less padding to allow wider content */
+        }
+
+        .z-section:nth-child(even) {
+            flex-direction: row-reverse !important;
+        }
+
+        .z-text {
+            flex: 1; /* Allow to grow */
+            max-width: 650px; /* Wider for better screen usage */
+            text-align: left !important;
+        }
+
+        .z-text h2 {
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+            font-size: 2.5rem; /* Slightly larger for impact */
+        }
+
+        .z-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            max-width: 600px;
+        }
+
+        .section-visual {
+            width: 100%;
+            border-radius: 32px;
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.8s cubic-bezier(0.165, 0.84, 0.44, 1);
+        }
+
+        .z-section:hover .section-visual {
+            transform: translateY(-15px) scale(1.03);
+        }
+
+        .z-section p {
+            opacity: 0.9;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            margin-top: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 1024px) {
+            .z-section {
+                flex-direction: column !important;
+                text-align: center;
+                gap: 3rem;
+                padding: 0 2rem;
+                margin-bottom: 6rem;
+            }
+
+            .z-section:nth-child(even) {
+                flex-direction: column !important;
+            }
+
+            .z-text {
+                max-width: 100%;
+                order: 1;
+            }
+
+            .z-image {
+                width: 100%;
+                order: 2;
+            }
+        }
+
         :root .replay-btn {
             box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
         }
@@ -2601,6 +2981,20 @@
 <!-- UPDATED: Initial state is data-theme="dark" for deeptech look on load -->
 
 <body class="is-loading">
+
+    <header id="mainHeader">
+        <a href="#" class="logo-link" onclick="navigateTo('home-view')">
+            <img src="assets/team_symbol.png" alt="Logo">
+            <span>SYNTHESIZER</span>
+        </a>
+        <nav>
+            <ul>
+                <li><a href="#" onclick="navigateTo('home-view')">Home</a></li>
+                <li><a href="#how-to-use">Process</a></li>
+                <li><a href="#" onclick="navigateTo('input-view')">Dashboard</a></li>
+            </ul>
+        </nav>
+    </header>
 
     <!-- ADDED: DARK MODE VIDEO (Visible when data-theme="dark") -->
     <video autoplay muted loop playsinline class="bg-video" id="bg-video-dark">
@@ -2667,7 +3061,8 @@
         <div id="home-view" class="page-view is-active">
             <div class="hero-pin-container">
                 <section class="hero hero-sticky-content">
-                    <div class="scramble-container" id="scrambleContainer">
+                    <h1 class="visually-hidden">Knowledge Synthesizer</h1>
+                    <div class="scramble-container" id="scrambleContainer" aria-hidden="true">
                         <!-- Content generated by JS -->
                     </div>
                     <div class="scramble-subtitle">Scanning Intelligence · Synthesizing Insight</div>
@@ -2720,7 +3115,7 @@
             <!-- ADDED: HOW TO USE SECTION -->
             <section id="how-to-use" class="how-to-section reveal">
                 <div class="section-header">
-                    <h2>How It Works</h2>
+                    <h2 class="js-scramble" data-scramble="How It Works">How It Works</h2>
                     <p>Go from noise to knowledge in four simple steps.</p>
                 </div>
 
@@ -2792,7 +3187,7 @@
 
             <div class="z-section reveal fade-left">
                 <div class="z-text">
-                    <h2>The Problem: Lost Insights</h2>
+                    <h2 class="js-scramble" data-scramble="The Problem: Lost Insights">The Problem: Lost Insights</h2>
                     <p>Classroom discussions are goldmines of insight, yet they often evaporate the moment the bell
                         rings. Without structure, valuable arguments get lost in the noise, making it nearly impossible
                         to review who said what or track how ideas evolved. This lack of retention turns dynamic debates
@@ -2810,7 +3205,7 @@
 
             <div class="z-section reveal fade-right">
                 <div class="z-text">
-                    <h2>The Solution: AI Synthesis</h2>
+                    <h2 class="js-scramble" data-scramble="The Solution: AI Synthesis">The Solution: AI Synthesis</h2>
                     <p>Our advanced AI doesn't just transcribe; it understands. It listens to the audio, filters out the
                         noise, and identifies the core logic within the conversation. By extracting key concepts,
                         mapping arguments to counterarguments, and highlighting open questions, the system transforms
@@ -2827,7 +3222,7 @@
 
             <div class="z-section reveal fade-up">
                 <div class="z-text">
-                    <h2>The Benefit: Visual Knowledge</h2>
+                    <h2 class="js-scramble" data-scramble="The Benefit: Visual Knowledge">The Benefit: Visual Knowledge</h2>
                     <p>Transform linear conversations into interactive visual landscapes. Students and educators can
                         navigate through complex debates at a glance, instantly spotting the flow of logic, identifying
                         consensus, and pinpointing unresolved friction. This visual approach deepens comprehension and
@@ -3037,12 +3432,7 @@
 
                     <div class="graph-wrapper">
                         <canvas id="knowledgeGraph"></canvas>
-                        <div class="legend">
-                            <div><span class="dot" style="background: var(--node-concept)"></span> Core Nexus</div>
-                            <div><span class="dot" style="background: var(--node-argument)"></span> Supporting Vector
-                            </div>
-                            <div><span class="dot" style="background: var(--node-counter)"></span> Friction Point</div>
-                        </div>
+                        <div class="legend-placeholder"></div>
                     </div>
                 </div>
 
@@ -3067,28 +3457,45 @@
         <!-- 3D Cloud-to-Linear Letter Splitter -->
         <script>
             (function () {
-                var container = document.getElementById('scrambleContainer');
-                if (!container) return;
-                var words = ["KNOWLEDGE", "SYNTHESIZER"];
-                container.innerHTML = '';
+                function initScramble(el, text, isHero) {
+                    if (!el) return;
+                    var words = text.split(' ');
+                    el.innerHTML = '';
+                    if (isHero) el.classList.add('scramble-container');
 
-                words.forEach(function (word, wi) {
-                    var wordDiv = document.createElement('div');
-                    wordDiv.className = 'scramble-word';
+                    words.forEach(function (word, wi) {
+                        var wordDiv = document.createElement('div');
+                        wordDiv.className = 'scramble-word';
 
-                    word.split('').forEach(function (char) {
-                        var s = document.createElement('span');
-                        s.textContent = char;
-                        s.className = 'scramble-letter' + (wi === 0 ? ' accent' : '');
+                        word.split('').forEach(function (char) {
+                            var s = document.createElement('span');
+                            s.textContent = char;
+                            s.className = 'scramble-letter';
+                            if (isHero && wi === 1) s.classList.add('accent');
 
-                        // CLEANER 2D SCATTER
-                        s.style.setProperty('--sx', (Math.random() - 0.5) * 500 + 'px');
-                        s.style.setProperty('--sy', (Math.random() - 0.5) * 300 + 'px');
-                        s.style.setProperty('--rz', (Math.random() - 0.5) * 180 + 'deg');
+                            // CLEANER 2D SCATTER
+                            s.style.setProperty('--sx', (Math.random() - 0.5) * 500 + 'px');
+                            s.style.setProperty('--sy', (Math.random() - 0.5) * 300 + 'px');
+                            s.style.setProperty('--rz', (Math.random() - 0.5) * 180 + 'deg');
 
-                        wordDiv.appendChild(s);
+                            wordDiv.appendChild(s);
+                        });
+                        el.appendChild(wordDiv);
                     });
-                    container.appendChild(wordDiv);
+                }
+
+                // Init main hero
+                initScramble(document.getElementById('scrambleContainer'), "KNOWLEDGE SYNTHESIZER", true);
+
+                // Init header logo
+                document.querySelectorAll('.header-scramble').forEach(function(el) {
+                    initScramble(el, "SYNTHESIZER", false);
+                });
+
+                // Init all tagged titles
+                document.querySelectorAll('.js-scramble').forEach(function(el) {
+                    var text = el.getAttribute('data-scramble') || el.textContent;
+                    initScramble(el, text, false);
                 });
             })();
         </script>

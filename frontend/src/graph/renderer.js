@@ -8,6 +8,8 @@ class GraphRenderer {
         this.animationId = null;
         this.isDark = true;
         this.draggedNode = null;
+        this.dragOffset = { x: 0, y: 0 };
+        this.highlightedNode = null;
         this.mousePos = { x: 0, y: 0 };
         this.graphData = { nodes: [], edges: [] };
         this.particles = [];
@@ -28,18 +30,30 @@ class GraphRenderer {
                 return Math.sqrt(dx * dx + dy * dy) <= node.r * 1.5;
             });
 
-            if (this.draggedNode) this.canvas.style.cursor = 'grabbing';
+            if (this.draggedNode) {
+                this.canvas.style.cursor = 'grabbing';
+                this.dragOffset.x = mouseX - this.draggedNode.x;
+                this.dragOffset.y = mouseY - this.draggedNode.y;
+                this.draggedNode.vx = 0;
+                this.draggedNode.vy = 0;
+            }
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!this.draggedNode) return;
             const rect = this.canvas.getBoundingClientRect();
-            this.draggedNode.x = e.clientX - rect.left;
-            this.draggedNode.y = e.clientY - rect.top;
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            this.draggedNode.x = mouseX - this.dragOffset.x;
+            this.draggedNode.y = mouseY - this.dragOffset.y;
+            this.draggedNode.vx = 0;
+            this.draggedNode.vy = 0;
         });
 
         window.addEventListener('mouseup', () => {
             if (this.draggedNode) {
+                this.draggedNode.pinned = true; // Pin the node after drop
                 this.draggedNode = null;
                 this.canvas.style.cursor = 'grab';
             }
@@ -54,10 +68,15 @@ class GraphRenderer {
 
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
-
-        graphData.nodes.forEach(n => {
-            n.x = cx + (Math.random() - 0.5) * 400;
-            n.y = cy + (Math.random() - 0.5) * 400;
+        
+        graphData.nodes.forEach((n, i) => {
+            // Spiral layout for better distribution and less overlap
+            const phi = i * 0.5 + 2; // Spiral spacing
+            const radius = 40 * phi; // Grow outward
+            const angle = 0.5 * phi;
+            
+            n.x = cx + Math.cos(angle) * radius;
+            n.y = cy + Math.sin(angle) * radius;
             n.vx = 0;
             n.vy = 0;
             n.r = n.type === 'concept' ? 28 : 22;
@@ -78,57 +97,60 @@ class GraphRenderer {
     }
 
     applyPhysics() {
-        const nodes = this.graphData.nodes;
-        const edges = this.graphData.edges;
-        const k = 0.05; // Spring constant
-        const repel = 1500; // Repulsion constant
-        const friction = 0.85;
+        const { nodes, edges } = this.graphData;
+        const k = 0.05;
+        const repel = 1800; // Stronger repulsion for distance
+        const friction = 0.85; // Faster stabilization
 
-        // 1. Repulsion
+        // 1. Repulsion (Always active to keep distance)
         for (let i = 0; i < nodes.length; i++) {
             for (let j = i + 1; j < nodes.length; j++) {
                 const dx = nodes[j].x - nodes[i].x;
                 const dy = nodes[j].y - nodes[i].y;
                 const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                const force = repel / (dist * dist);
-                const fx = (dx / dist) * force;
-                const fy = (dy / dist) * force;
-                nodes[i].vx -= fx;
-                nodes[i].vy -= fy;
-                nodes[j].vx += fx;
-                nodes[j].vy += fy;
+                
+                if (dist < 200) { // Only repel if too close
+                    const force = repel / (dist * dist);
+                    const fx = (dx / dist) * force;
+                    const fy = (dy / dist) * force;
+                    
+                    if (nodes[i] !== this.draggedNode && !nodes[i].pinned) {
+                        nodes[i].vx -= fx;
+                        nodes[i].vy -= fy;
+                    }
+                    if (nodes[j] !== this.draggedNode && !nodes[j].pinned) {
+                        nodes[j].vx += fx;
+                        nodes[j].vy += fy;
+                    }
+                }
             }
         }
 
-        // 2. Attraction (Springs)
-        edges.forEach(edge => {
-            const s = nodes.find(n => n.id === edge.source);
-            const t = nodes.find(n => n.id === edge.target);
-            if (s && t) {
-                const dx = t.x - s.x;
-                const dy = t.y - s.y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                const force = (dist - 150) * k;
-                const fx = (dx / dist) * force;
-                const fy = (dy / dist) * force;
-                s.vx += fx;
-                s.vy += fy;
-                t.vx -= fx;
-                t.vy -= fy;
-            }
-        });
-
-        // 3. Center Gravity
+        // Attraction and Center Gravity removed for "static" feel but "spaced" look
+        // We only move nodes if they have velocity from repulsion or dragging release
+        
         const cx = this.canvas.width / 2;
         const cy = this.canvas.height / 2;
         nodes.forEach(n => {
-            if (n === this.draggedNode) return;
-            n.vx += (cx - n.x) * 0.01;
-            n.vy += (cy - n.y) * 0.01;
+            if (n === this.draggedNode || n.pinned) {
+                n.vx = 0;
+                n.vy = 0;
+                return;
+            }
+            
+            // Apply friction and movement
             n.vx *= friction;
             n.vy *= friction;
             n.x += n.vx;
             n.y += n.vy;
+
+            // Contain within bounds with legend padding at top
+            const pad = 60;
+            const topPad = 120; // Extra room for legend at top
+            if (n.x < pad) { n.x = pad; n.vx *= -1; }
+            if (n.x > this.canvas.width - pad) { n.x = this.canvas.width - pad; n.vx *= -1; }
+            if (n.y < topPad) { n.y = topPad; n.vy *= -1; }
+            if (n.y > this.canvas.height - pad) { n.y = this.canvas.height - pad; n.vy *= -1; }
         });
     }
 
@@ -186,36 +208,111 @@ class GraphRenderer {
             
             this.ctx.save();
             this.ctx.translate(node.x, node.y);
+            
+            // Pulsing highlight for replay
+            if (node.pulsing) {
+                const pulse = Math.sin(Date.now() / 200) * 5 + 10;
+                this.ctx.beginPath();
+                this.ctx.arc(0, 0, node.r + pulse, 0, Math.PI * 2);
+                this.ctx.strokeStyle = `rgba(0, 242, 255, ${0.5 - pulse/40})`;
+                this.ctx.lineWidth = 3;
+                this.ctx.stroke();
+            }
 
-            // Cinematic Glow
-            const grad = this.ctx.createRadialGradient(0, 0, 0, 0, 0, node.r * 2);
-            grad.addColorStop(0, nodeColor);
-            grad.addColorStop(1, 'transparent');
-            
-            this.ctx.globalAlpha = 0.15;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, node.r * 2, 0, Math.PI * 2);
-            this.ctx.fillStyle = grad;
-            this.ctx.fill();
-            
-            this.ctx.globalAlpha = 1.0;
+            // Node Shadow/Glow
+            this.ctx.shadowBlur = 15;
+            this.ctx.shadowColor = 'rgba(0,0,0,0.3)';
+
+            // Node Circle
             this.ctx.beginPath();
             this.ctx.arc(0, 0, node.r, 0, Math.PI * 2);
-            this.ctx.fillStyle = nodeColor;
+            this.ctx.fillStyle = nodeColor; 
             this.ctx.fill();
             
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+            // Inner Ring
+            this.ctx.strokeStyle = 'rgba(255,255,255,0.2)';
             this.ctx.lineWidth = 2;
             this.ctx.stroke();
 
-            // Label
-            this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
-            this.ctx.font = 'bold 12px Inter, sans-serif';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText(node.label, 0, node.r + 18);
+            // Label Background
+            this.ctx.font = 'bold 11px Inter, sans-serif';
+            const label = node.label;
+            const metrics = this.ctx.measureText(label);
+            const padding = 4;
             
+            this.ctx.fillStyle = this.isDark ? 'rgba(2, 6, 23, 0.8)' : 'rgba(248, 250, 252, 0.8)';
+            this.ctx.fillRect(-metrics.width/2 - padding, node.r + 8, metrics.width + padding*2, 16);
+
+            // Label Text
+            this.ctx.fillStyle = this.isDark ? '#fff' : '#0A192F';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText(label, 0, node.r + 20);
             this.ctx.restore();
         });
+
+        this.drawLegend();
+    }
+
+    drawLegend() {
+        const categories = [
+            { label: 'CORE NEXUS', color: this.getCSSVar('--node-concept') || '#fbbf24' },
+            { label: 'SUPPORTING VECTOR', color: this.getCSSVar('--node-argument') || '#34d399' },
+            { label: 'FRICTION POINT', color: this.getCSSVar('--node-counter') || '#fb7185' },
+            { label: 'SECONDARY INSIGHTS', color: this.getCSSVar('--node-unresolved') || '#94a3b8' }
+        ];
+
+        const padding = 20;
+        const itemGap = 30;
+        let currentX = 25;
+        const y = 30;
+
+        this.ctx.save();
+        
+        // Semi-transparent background pill
+        const pillWidth = 650;
+        const pillHeight = 36;
+        const r = 18;
+        const px = 15;
+        const py = 12;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + r, py);
+        this.ctx.lineTo(px + pillWidth - r, py);
+        this.ctx.quadraticCurveTo(px + pillWidth, py, px + pillWidth, py + r);
+        this.ctx.lineTo(px + pillWidth, py + pillHeight - r);
+        this.ctx.quadraticCurveTo(px + pillWidth, py + pillHeight, px + pillWidth - r, py + pillHeight);
+        this.ctx.lineTo(px + r, py + pillHeight);
+        this.ctx.quadraticCurveTo(px, py + pillHeight, px, py + pillHeight - r);
+        this.ctx.lineTo(px, py + r);
+        this.ctx.quadraticCurveTo(px, py, px + r, py);
+        this.ctx.closePath();
+
+        this.ctx.fillStyle = this.isDark ? 'rgba(15, 23, 42, 0.7)' : 'rgba(255, 255, 255, 0.9)';
+        this.ctx.fill();
+        this.ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        this.ctx.stroke();
+
+        categories.forEach(cat => {
+            // Dot
+            this.ctx.beginPath();
+            this.ctx.arc(currentX + 10, y + 2, 5, 0, Math.PI * 2);
+            this.ctx.fillStyle = cat.color;
+            this.ctx.shadowBlur = 10;
+            this.ctx.shadowColor = cat.color;
+            this.ctx.fill();
+            this.ctx.shadowBlur = 0;
+
+            // Text
+            this.ctx.font = 'bold 10px Inter, sans-serif';
+            this.ctx.fillStyle = this.isDark ? '#fff' : '#1e293b';
+            this.ctx.textAlign = 'left';
+            this.ctx.fillText(cat.label, currentX + 22, y + 4);
+
+            const metrics = this.ctx.measureText(cat.label);
+            currentX += metrics.width + itemGap + 20;
+        });
+
+        this.ctx.restore();
     }
 
     animate() {
@@ -225,4 +322,32 @@ class GraphRenderer {
     }
 
     setTheme(isDark) { this.isDark = isDark; }
+
+    highlightNodeByLabel(text, pulse) {
+        if (!text) return;
+        const target = text.toLowerCase();
+        
+        // Find nodes where label is in text or text is in label
+        // Rank by label length to avoid matching "a" or other small words incorrectly
+        const matchingNodes = this.graphData.nodes.filter(n => {
+            const label = n.label.toLowerCase();
+            return label.length > 2 && (target.includes(label) || label.includes(target));
+        });
+
+        if (matchingNodes.length > 0) {
+            // Sort by label length descending to get the most specific match
+            matchingNodes.sort((a, b) => b.label.length - a.label.length);
+            const node = matchingNodes[0];
+            
+            this.highlightedNode = node;
+            if (pulse) {
+                // Temporary highlight
+                setTimeout(() => {
+                    if (this.highlightedNode === node) this.highlightedNode = null;
+                }, 3000);
+            }
+            return node;
+        }
+        return null;
+    }
 }

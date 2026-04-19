@@ -1,79 +1,65 @@
 # Knowledge Synthesizer ≡ƒºá
+> **Executive Intelligence & Real-Time Discussion Mapping**
 
-**Knowledge Synthesizer** is a high-performance "Deeptech" application designed to transform unstructured discussions, classroom debates, and complex data into structured, interactive visual maps.
+**Knowledge Synthesizer** is a high-performance, cinematic "Deeptech" application designed to transform unstructured discussions, classroom debates, and complex data into structured, interactive visual landscapes. 
 
-Built with a focus on education and research, it leverages AI to identify key arguments, extract consensus, and visualize the evolution of ideas.
+Designed for executives, researchers, and educators, it bridges the gap between raw audio and actionable insight through advanced AI synthesis and immersive UI/UX.
 
 ---
 
 ## ≡ƒÜÇ Getting Started
 
-### 1. Prerequisites
+### 1. Quick Launch (Windows)
+Simply run the root `start.bat` file to initialize both the FastAPI backend and the frontend environment.
+
+### 2. Manual Prerequisites
 - **Python 3.10+**
-- **FFmpeg**: Required for audio processing and transcription.
+- **FFmpeg**: Required for audio processing and high-fidelity transcription.
     - [Download FFmpeg](https://ffmpeg.org/download.html) and add the `bin` folder to your System PATH.
-- **Tesseract OCR** (Optional): For processing whiteboard images.
+- **Tesseract OCR**: (Optional) For digitizing whiteboard captures.
 
-### 2. Backend Setup
-1. Navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-2. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Configure environment variables in `.env` (refer to `.env.example`).
-4. Run the server:
-   ```bash
-   python main.py
-   ```
-
-### 3. Frontend Setup
-The frontend is built with pure HTML/JS for zero-config deployment.
-1. Simply open `frontend/index.html` in your browser.
-2. Ensure the backend is running to enable AI features.
+### 3. Environment Configuration
+Ensure your `.env` in the `backend/` directory is configured with your API keys (e.g., Together.ai, OpenAI) for the reasoning engine to function.
 
 ---
 
-## ≡ƒö¿ Key Features
+## ≡ƒö¿ Key Features & Architecture
 
-### 1. Audio Intelligence (Live & Upload)
-- **Automatic Speaker Diarization**: Detects different voices during a live roundtable.
-- **Noise Reduction**: Cleans audio before processing.
-- **Fast Transcription**: Converts speech to text in real-time.
+### 1. Neural Audio Capture
+- **Universal Input**: Supports **Live Microphone**, **Transcript Text**, and **Voice File** uploads.
+- **Real-Time Synthesis**: Connects to high-end LLM providers (Together.ai) to extract keynotes and logic while the audio is still processing.
 
-### 2. Knowledge Synthesizer (The Engine)
-- **Key Point Extraction**: Identifies the core logic of a discussion.
-- **Smart Tagging**: Categorizes insights using NLP.
-- **Decision Replay**: An animated walkthrough of how the discussion unfolded.
+### 2. Executive Intelligence Dashboard
+- **Dynamic Knowledge Mapping**: Visualizes discussions as interactive nodes. Identify consensus, friction points, and argument evolution at a glance.
+- **Decision Replay**: An animated timeline that walks you through the "birthing" of ideas during the session.
 
-### 3. Interactive Knowledge Graph
-- **Dynamic Mapping**: Visualizes concepts as nodes and relationships as edges.
-- **Theme Support**: Seamlessly switch between **Intellectual Tech** (Light) and **Deeptech Neural** (Dark) modes.
-
-### 4. Fact-Check Pipeline
-- **Auto-Verification**: Cross-references claims against external logic using the Integrated Fact-Checker.
-- **Evidence Retrieval**: Provides context and "gray zone" detection for ambiguous claims.
+### 3. Integrated Fact-Check Pipeline
+- **Auto-Verification**: Cross-references claims against logical consistency checks.
+- **Evidence Retrieval**: Highlights "Gray Zones" and provides evidence-backed reasoning for complex claims.
 
 ---
 
-## ≡ƒæü premium User Experience
+## ≡ƒæü premium UI/UX (The "Executive" Look)
 
-### Animated Scrolling
-The landing page uses the **Lenis** inertia engine for smooth momentum-based scrolling. Elements reveal themselves with cinematic blur-fades as you navigate.
+### Cinematic Scramble Animations
+The interface features a custom **High-Performance Scramble Engine** that reveals text with a tech-heavy, decrypted aesthetic without compromising browser performance.
 
-### Dual-Theme Architecture
-Toggle between the high-contrast Light mode and the immersive Dark mode using the floating icon.
+### Optimized Z-Pattern Layout
+The landing page follows a meticulously balanced Z-pattern, ensuring that visuals and "writings" are perfectly aligned for readability and visual impact.
+
+### Butter-Smooth Performance
+- **Lenis Inertia Engine**: Momentum-based smooth scrolling for a premium feel.
+- **Native Scroll Animations**: Leverages modern CSS `view()` timelines for 60fps cinematic transitions with zero JS overhead.
+- **Advanced Glassmorphism**: A state-of-the-art frosted glass UI that adapts dynamically to dark and light modes.
 
 ---
 
 ## ≡ƒæ⌐≡ƒæ╗ Technology Stack
-- **Frontend**: Vanilla JS, D3-like Graphing, CSS3 Grid/Flex, FontAwesome.
-- **Backend**: FastAPI, Uvicorn, SpeechRecognition, Pydub, TextBlob, Deep Translator.
-- **AI/LLM**: Support for **Together.ai** and local **Ollama** (Llama3) for advanced reasoning.
+- **Frontend**: Vanilla JS (ES6+), CSS3 (Custom Design System), FontAwesome 6, Lenis Scroll.
+- **Backend**: FastAPI (Async), Uvicorn, Pydub (Audio), SpeechRecognition, TextBlob.
+- **Reasoning**: Support for **Together.ai**, **Ollama** (Llama 3), and **Google Gemini** for fact-checking and synthesis.
 
 ---
 
-## ≡ƒôö Documentation & Support
-For advanced configuration of the Fact-Checker or Graph Engine, please refer to the `src/` directory within the backend.
+## ≡ƒôö License & Support
+Developed for high-stakes knowledge retention. For architectural deep-dives, explore the `backend/src/` modules including the `fact_checker` and `reasoning_engine`.
